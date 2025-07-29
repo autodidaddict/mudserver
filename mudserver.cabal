@@ -28,6 +28,7 @@ library
                        Game.World.GameObjects,
                        Game.Scripts.ScriptMap,
                        Game.Mudlib.ObjectFuns,
+                       Game.Scripts.LuaBindings,
                        Config,
                        Network,
                        PasswordHash
