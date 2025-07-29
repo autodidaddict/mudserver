@@ -110,7 +110,7 @@ defaultSandbox = do
   let dangerous = ["io", "os", "debug", "package", "require", "dofile", "loadfile"]
   forM_ dangerous $ \nm -> pushnil >> setglobal nm
   settop 0
-
+  
 
 throwLuaError :: Lua.Status -> Lua a
 throwLuaError statusCode = do

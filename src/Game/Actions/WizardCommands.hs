@@ -13,9 +13,10 @@ import qualified Data.Map.Strict as Map
 import Control.Monad.State (gets, liftIO)
 import Control.Concurrent.STM (readTVarIO)
 import Game.Actions.Commands (Command(..), CommandHandler, CommandRegistry, handleCommand, createHelpHandler)
-import Game.Monad (GameM, writeLine, playerObject)
+import Game.Monad (GameM, writeLine, playerObject, scriptMap)
 import Game.World.GameObjects (allObjects, getObject)
-import Game.Types.Object (showRef, objName, objEnv, SomeObjectRef(..), SomeObject(..), SomeInstRef(..), objInventory, getRef)
+import Game.Types.Object (showRef, objName, objEnv, SomeObjectRef(..), SomeObject(..), SomeInstRef(..), objInventory, getRef, objRef, ObjectRef(..))
+import Game.Mudlib.ObjectFuns (getShort)
 import Game.Types.Player (Player(..))
 
 -- | Registry of all available wizard commands
@@ -45,6 +46,26 @@ cmdHere _ = do
       -- Extract the room's name and display it with the reference
       let roomName = objName roomObj
       writeLine $ roomName <> " (" <> showRef envRef <> ")"
+      
+      -- Get the prototype name from the room reference
+      case objRef roomObj of
+        RoomRef protoName -> do
+          -- Get the ScriptMap
+          scriptMapTVar <- gets scriptMap
+          scriptMapValue <- liftIO $ readTVarIO scriptMapTVar
+          
+          -- Look up the Lua state for the prototype
+          case Map.lookup protoName scriptMapValue of
+            Just luaState -> do
+              -- Call getShort on the Lua state
+              shortResult <- liftIO $ getShort luaState
+              case shortResult of
+                Right shortDesc -> writeLine $ "Short description: " <> T.pack shortDesc
+                Left err -> writeLine $ "Error getting short description: " <> T.pack err
+            Nothing -> 
+              writeLine $ "No script found for prototype: " <> protoName
+        _ -> 
+          writeLine "Not a room reference (unexpected)"
       
       -- Display the room's inventory
       let inventory = objInventory roomObj

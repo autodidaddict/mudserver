@@ -27,6 +27,7 @@ library
                        Game.Actions.SlashCommands,
                        Game.World.GameObjects,
                        Game.Scripts.ScriptMap,
+                       Game.Mudlib.ObjectFuns,
                        Config,
                        Network,
                        PasswordHash
