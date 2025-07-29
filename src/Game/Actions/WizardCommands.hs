@@ -45,7 +45,7 @@ cmdHere _ = do
     Just (SomeObject roomObj) -> do
       -- Extract the room's name and display it with the reference
       let roomName = objName roomObj
-      writeLine $ roomName <> " (" <> showRef envRef <> ")"
+      writeLine $ "\n" <> roomName <> " (" <> showRef envRef <> ")"
       
       -- Get the prototype name from the room reference
       case objRef roomObj of
@@ -60,7 +60,7 @@ cmdHere _ = do
               -- Call getShort on the Lua state
               shortResult <- liftIO $ getShort luaState
               case shortResult of
-                Right shortDesc -> writeLine $ "Short description: " <> T.pack shortDesc
+                Right shortDesc -> writeLine $ "\n" <> T.pack shortDesc <> "\n"
                 Left err -> writeLine $ "Error getting short description: " <> T.pack err
             Nothing -> 
               writeLine $ "No script found for prototype: " <> protoName
