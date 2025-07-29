@@ -1,0 +1,93 @@
+cabal-version:   3.14
+name:            mudserver
+version:         0.1.0.0
+license:         NONE
+author:          Kevin Hoffman
+maintainer:      autodidaddict@users.noreply.github.com
+build-type:      Simple
+extra-doc-files: CHANGELOG.md
+
+common warnings
+    ghc-options: -Wall
+
+library
+  exposed-modules:     Game.Types.Object,
+                       Game.Types.Equipment,
+                       Game.Types.Player,
+                       Game.Types.Room,
+                       Game.Types.Persistable,
+                       Game.Types.Item,
+                       Game.Types.Common,
+                       Game.Actions.Inventory,
+                       Game.Actions.Input,
+                       Game.Actions.Commands,
+                       Game.Actions.WizardCommands,
+                       Game.Monad,
+                       Game.Actions.SlashCommands,
+                       Game.World.GameObjects,
+                       Game.Scripts.ScriptMap,
+                       Config,
+                       Network,
+                       PasswordHash
+  hs-source-dirs:      src
+  build-depends:       base >=4.7 && <5,
+                       network,
+                       bytestring,
+                       containers,
+                       mtl,
+                       stm,
+                       text,
+                       cryptonite,
+                       random,
+                       memory,
+                       aeson,
+                       aeson-pretty,
+                       directory,
+                       filepath,
+                       hslua             >= 2.4 && < 2.5
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+
+executable mudserver
+  main-is:             Main.hs
+  hs-source-dirs:      app
+  build-depends:       base >=4.7 && <5,
+                       mudserver,
+                       network,
+                       text,
+                       stm,
+                       mtl,
+                       containers,
+                       cryptonite,
+                       random,
+                       memory
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+
+test-suite mudserver-test
+  type:                exitcode-stdio-1.0
+  main-is:             Spec.hs
+  other-modules:       Game.Types.PlayerSpec,
+                       Game.Types.PlayerPersistenceSpec,
+                       Game.Types.ObjectPersistenceSpec,
+                       Game.Types.ObjectSpec,
+                       Game.Actions.InventorySpec,
+                       Game.Types.ItemSpec,
+                       Game.MonadSpec
+  hs-source-dirs:      test
+  build-depends:       base >=4.7 && <5,
+                       mudserver,
+                       hspec,
+                       containers,
+                       text,
+                       aeson,
+                       aeson-pretty,
+                       bytestring,
+                       directory,
+                       filepath,
+                       stm,
+                       network
+  build-tool-depends:  hspec-discover:hspec-discover
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+
