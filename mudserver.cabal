@@ -18,6 +18,7 @@ library
                        Game.Types.Persistable,
                        Game.Types.Item,
                        Game.Types.Common,
+                       Game.Types.CommandState,
                        Game.Actions.Inventory,
                        Game.Actions.Input,
                        Game.Actions.Commands,

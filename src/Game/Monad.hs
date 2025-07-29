@@ -14,24 +14,11 @@ module Game.Monad
   ) where
 
 import Control.Monad.State
-import Network.Socket (Socket)
-import Control.Concurrent.STM (TVar)
 import qualified Network.Socket.ByteString as NSB
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-import Game.Types.Player (Player, playerIsWizard)
-import Game.Types.Common (PlayerName(..), PlayerMap, ObjectsMap)
-import Game.Scripts.ScriptMap (ScriptMap)
-
--- | The state maintained for each command execution
-data CommandState = CommandState
-  { clientSocket :: Socket        -- ^ The client's socket connection
-  , playerName   :: PlayerName    -- ^ The player's name
-  , playerObject :: Player        -- ^ The player object
-  , playerList   :: TVar (PlayerMap Player) -- ^ Shared map of all connected players
-  , objectsMap   :: TVar ObjectsMap -- ^ Shared map of all game objects
-  , scriptMap    :: TVar ScriptMap -- ^ Shared map of all prototype scripts
-  }
+import Game.Types.Player (playerIsWizard)
+import Game.Types.CommandState (CommandState(..))
 
 -- | The GameM monad for handling commands with state
 newtype GameM a = GameM { unGameM :: StateT CommandState IO a }
