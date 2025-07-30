@@ -37,8 +37,8 @@ prototypeToFilePath prototype =
 -- | Load a prototype script into the script map
 -- If the prototype is already loaded, does nothing
 -- Returns Either an error message or the updated ScriptMap
-loadPrototype :: (MonadIO m) => ServerConfig -> T.Text -> ScriptMap -> m (Either String ScriptMap)
-loadPrototype config prototype scriptMap =
+loadPrototype :: (MonadIO m) => ServerConfig -> CommandState -> T.Text -> ScriptMap -> m (Either String ScriptMap)
+loadPrototype config cmdState prototype scriptMap =
   if Map.member prototype scriptMap
     then return (Right scriptMap)  -- Already loaded, do nothing
     else do
@@ -50,7 +50,7 @@ loadPrototype config prototype scriptMap =
         then return (Left $ "Script file does not exist: " ++ scriptPath)  -- Script file doesn't exist, return error
         else do
           -- Load the script using loadScriptDefault
-          result <- liftIO $ loadScriptDefault scriptPath
+          result <- liftIO $ loadScriptDefault cmdState scriptPath
           case result of
             Left err -> return (Left $ "Failed to load script: " ++ show err)
             Right luaState -> return (Right $ Map.insert prototype luaState scriptMap)
@@ -74,8 +74,8 @@ unloadPrototype prototype scriptMap =
 -- Takes a list of SomeObjectRef and calls loadPrototype for each one
 -- Returns Either an error message or the updated ScriptMap
 -- Starts with emptyScriptMap
-loadPrototypeList :: (MonadIO m) => ServerConfig -> [SomeObjectRef] -> m (Either String ScriptMap)
-loadPrototypeList config refs = do
+loadPrototypeList :: (MonadIO m) => ServerConfig -> CommandState -> [SomeObjectRef] -> m (Either String ScriptMap)
+loadPrototypeList config cmdState refs = do
   -- Extract prototype name from each SomeObjectRef
   let getPrototype (SomeRef (RoomRef proto)) = proto
       getPrototype (SomeRef (InstRef proto _)) = proto
@@ -89,7 +89,7 @@ loadPrototypeList config refs = do
             Left err -> return (Left err)  -- If we already have an error, just propagate it
             Right scriptMap -> do
               let proto = getPrototype objRef
-              loadPrototype config proto scriptMap
+              loadPrototype config cmdState proto scriptMap
         ) (Right initialMap) refs
 
 
@@ -104,14 +104,15 @@ defaultSandbox = do
 -- Returns Lua state or an exception.
 loadScript
   :: SandboxSetup   -- Sandbox initialization Lua action
+  -> CommandState   -- Command state for GameM actions
   -> FilePath       -- Lua script path
   -> IO (Either SomeException Lua.State)
-loadScript sandbox path = do
+loadScript sandbox cmdState path = do
   lstate <- Lua.newstate
   Control.Exception.try $ Lua.runWith lstate $ do
     Lua.openlibs
     sandbox
-    registerGameFunctions
+    registerGameFunctions cmdState
     status1 <- Lua.loadfile (Just path)
     if status1 /= OK
       then throwLuaError status1
@@ -125,9 +126,7 @@ loadScript sandbox path = do
 throwLuaError :: Status -> LuaM a
 throwLuaError code = Lua.failLua ("Lua error: " <> show code)
 
-
-
 -- | Convenience wrapper using the default sandbox.
-loadScriptDefault :: FilePath -> IO (Either SomeException Lua.State)
-loadScriptDefault = loadScript defaultSandbox
+loadScriptDefault :: CommandState -> FilePath -> IO (Either SomeException Lua.State)
+loadScriptDefault cmdState = loadScript defaultSandbox cmdState
 
