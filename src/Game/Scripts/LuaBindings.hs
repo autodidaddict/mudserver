@@ -5,13 +5,12 @@ module Game.Scripts.LuaBindings
   ( getShortAction
   ) where
 
-import HsLua as Lua hiding (error, try)
--- Import instances from HsLua.Core.Error as suggested by GHC warning
+import HsLua.Core
 import HsLua.Core.Error()
-import Control.Exception (try, SomeException)
 import qualified Data.ByteString.Char8 as BS8
+import Game.Scripts.LuaCtx
 
-getShortAction :: LuaE Exception (Either String String)
+getShortAction :: LuaM (Either String String)
 getShortAction = do
     -- Get the global Lua function named "short"
     _ <- getglobal "short"

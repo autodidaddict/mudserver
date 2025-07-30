@@ -10,7 +10,7 @@ module Game.Scripts.ScriptMap
 import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
 
-import HsLua as Lua hiding (error, try)
+import qualified HsLua as Lua
 -- | Type alias for the script map
 -- Maps prototype names to Lua states
 type ScriptMap = Map.Map T.Text Lua.State

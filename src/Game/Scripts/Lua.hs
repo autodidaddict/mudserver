@@ -11,12 +11,17 @@ import System.Directory (doesFileExist)
 import Control.Monad.IO.Class (MonadIO)
 import Config (ServerConfig(..))
 import Data.List (intercalate)
-import HsLua as Lua hiding (error, try)
+import HsLua.Core
+import qualified HsLua as Lua
 import Control.Exception (try, SomeException)
 import Game.Scripts.ScriptMap
-import qualified Data.ByteString.Char8 as BS8
 import Game.Types.Object (SomeObjectRef(..), ObjectRef(..))
 import Control.Monad (forM_, foldM)
+import Game.Scripts.LuaCtx
+
+-- | A sandbox setup runs inside the Lua monad and can alter the global env.
+type SandboxSetup = LuaM ()
+
 
 -- | Convert a prototype name to a file path
 -- e.g., "std.room.thevoid" -> "scripts/std/room/thevoid"
@@ -85,8 +90,6 @@ loadPrototypeList config refs = do
               loadPrototype config proto scriptMap
         ) (Right initialMap) refs
 
--- | A sandbox setup runs inside the Lua monad and can alter the global env.
-type SandboxSetup = Lua ()
 
 defaultSandbox :: SandboxSetup
 defaultSandbox = do
@@ -95,29 +98,30 @@ defaultSandbox = do
   settop 0
 
 
-throwLuaError :: Lua.Status -> Lua a
-throwLuaError statusCode = do
-  -- Error message should be on top of the stack
-  msg <- tostring (-1)
-  errMsg <- case msg of
-    Just bs -> return $ BS8.unpack bs
-    Nothing -> return $ "Lua error with status: " ++ show statusCode
-  error errMsg
-
-loadScript :: SandboxSetup -> FilePath -> IO (Either SomeException Lua.State)
+-- | Run a Lua script file, applying the sandbox and loading the script.
+-- Returns Lua state or an exception.
+loadScript
+  :: SandboxSetup   -- Sandbox initialization Lua action
+  -> FilePath       -- Lua script path
+  -> IO (Either SomeException Lua.State)
 loadScript sandbox path = do
-  st <- newstate
-  try $ runWith st $ do
-    openlibs
+  lstate <- Lua.newstate
+  Control.Exception.try $ Lua.runWith lstate $ do
+    Lua.openlibs
     sandbox
-    statusCode <- loadfile (Just path)
-    if statusCode /= OK
-      then throwLuaError statusCode
+    status1 <- Lua.loadfile (Just path)
+    if status1 /= OK
+      then throwLuaError status1
       else do
-        statusCode' <- pcall 0 multret Nothing
-        if statusCode' /= OK
-          then throwLuaError statusCode'
-          else return st
+        status2 <- Lua.pcall 0 multret Nothing
+        if status2 /= OK
+          then throwLuaError status2
+          else return lstate
+
+-- | Throw a Lua error by failing with a textual message
+throwLuaError :: Status -> LuaM a
+throwLuaError code = Lua.failLua ("Lua error: " <> show code)
+
 
 -- | Convenience wrapper using the default sandbox.
 loadScriptDefault :: FilePath -> IO (Either SomeException Lua.State)
