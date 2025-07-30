@@ -78,7 +78,8 @@ test-suite mudserver-test
                        Game.Types.ObjectSpec,
                        Game.Actions.InventorySpec,
                        Game.Types.ItemSpec,
-                       Game.MonadSpec
+                       Game.MonadSpec,
+                       Game.Scripts.LuaBindingsSpec
   hs-source-dirs:      test
   build-depends:       base >=4.7 && <5,
                        mudserver,
@@ -91,7 +92,8 @@ test-suite mudserver-test
                        directory,
                        filepath,
                        stm,
-                       network
+                       network,
+                       hslua             >= 2.4 && < 2.5
   build-tool-depends:  hspec-discover:hspec-discover
   default-language:    Haskell2010
   ghc-options:         -Wall
