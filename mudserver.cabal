@@ -26,6 +26,8 @@ library
                        Game.Actions.SlashCommands,
                        Game.World.GameObjects,
                        Game.Scripts.ScriptMap,
+                       Game.Scripts.LuaCtx,
+                       Game.Scripts.Lua,
                        Game.Mudlib.ObjectFuns,
                        Game.Scripts.LuaBindings,
                        Config,

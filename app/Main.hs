@@ -14,7 +14,7 @@ import Config (ServerConfig(..), defaultConfig)
 import Network (resolve, open, acceptLoop)
 import Game.Actions.Input (clientHandler)
 import Game.Types.Room (preloadRooms)
-import Game.Scripts.ScriptMap (loadPrototypeList)
+import Game.Scripts.Lua (loadPrototypeList)
 import Game.Types.Object()
 
 
