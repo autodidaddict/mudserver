@@ -9,8 +9,8 @@ module Game.Types.CommandState
 
 import Network.Socket (Socket)
 import Control.Concurrent.STM (TVar)
-import Game.Types.Player (Player)
-import Game.Types.Common (PlayerName(..), PlayerMap, ObjectsMap)
+import Game.Types.Player (Player, PlayerName(..), PlayerMap)
+import Game.Types.Object (ObjectsMap)
 import Game.Scripts.ScriptMap (ScriptMap)
 
 -- | The state maintained for each command execution

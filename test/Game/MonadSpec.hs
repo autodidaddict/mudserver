@@ -13,7 +13,7 @@ import Network.Socket (Socket)
 
 import Game.Types.Object
 import Game.Types.Player
-import Game.Types.Common (ObjectsMap, PlayerName(..))
+import Game.Types.Player(PlayerName(..))
 import Game.Monad (runGameM, CommandState(..), objectsMap)
 import Game.World.GameObjects (deleteObject)
 import Game.Actions.Inventory (addToInventory)

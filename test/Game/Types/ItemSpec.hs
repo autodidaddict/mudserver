@@ -14,7 +14,6 @@ import Network.Socket (Socket)
 import Game.Types.Object
 import Game.Types.Player
 import Game.Types.Item
-import Game.Types.Common (ObjectsMap, PlayerName(..))
 import Game.Monad (runGameM, CommandState(..), objectsMap)
 import qualified Game.World.GameObjects as GameObjects
 import Game.Scripts.ScriptMap (emptyScriptMap)

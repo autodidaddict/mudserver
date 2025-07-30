@@ -20,7 +20,7 @@ import Control.Monad.State (gets)
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Map.Strict as Map
 
-import Game.Types.Common (PlayerName(..), PlayerMap, ObjectsMap)
+import Game.Types.Player (PlayerName(..), PlayerMap)
 import Game.Monad (GameM, CommandState(..), runGameM, writeLine, amWizard)
 import Game.World.GameObjects (addObject, deleteObject, addObjectToEnvironment)
 import Game.Actions.SlashCommands (handleSlashCommand)
@@ -29,7 +29,7 @@ import Game.Scripts.ScriptMap (ScriptMap)
 import Config (ServerConfig(..))
 import Network (recvLine, sendLine, promptForInput, promptForPassword)
 import Game.Types.Player (savePlayer, loadPlayer, mkDefaultPlayer, Player(playerBase, playerPasswordHash))
-import Game.Types.Object (ObjectRef(..), SomeObjectRef(..), objRef)
+import Game.Types.Object (ObjectRef(..), SomeObjectRef(..), objRef, ObjectsMap)
 import PasswordHash (hashPassword, verifyPassword)
 
 -- | Handle a client connection

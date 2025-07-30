@@ -24,8 +24,8 @@ import Control.Concurrent (forkIO)
 import Control.Concurrent.STM (TVar)
 import Data.Char (chr)
 
-import Game.Types.Common (PlayerMap, ObjectsMap)
-import Game.Types.Player (Player)
+import Game.Types.Object (ObjectsMap)
+import Game.Types.Player (Player, PlayerMap)
 import Game.Scripts.ScriptMap (ScriptMap)
 import Config (ServerConfig(..))
 

@@ -4,21 +4,36 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Game.Types.Player 
   ( Player(..)
   , mkDefaultPlayer
   , savePlayer
   , loadPlayer
+  , PlayerName(..)
+  , PlayerMap
   ) where
 
 import Game.Types.Object (ObjectData(..), ObjectRef(..), ObjectKind(..), HasObject(..), Visibility(..), Slot(..), Hand(..))
 import Game.Types.Equipment (Equipped, Wielded, AvailableSlots, AvailableHands, Wearer(..), Wielder(..))
 import Game.Types.Persistable (Persistable(..), defaultSaveObject, defaultLoadObject)
 import qualified Data.Map.Strict as M
+import Data.Map.Strict (Map)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Aeson (ToJSON(..), FromJSON(..), (.=), (.:), object, withObject)
 import GHC.Generics (Generic)
+import Network.Socket (Socket)
+
+-- | Newtype for player names to improve type safety
+newtype PlayerName = PlayerName { unPlayerName :: T.Text }
+  deriving (Eq, Ord, Show)
+
+-- | Type alias for the player map
+-- Maps player names to (socket, player object) pairs
+-- Uses a type parameter p for the player type to avoid circular dependencies
+type PlayerMap p = Map PlayerName (Socket, p)
 
 data Player = Player
   { playerBase          :: ObjectData 'PlayerK

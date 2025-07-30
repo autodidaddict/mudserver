@@ -17,8 +17,7 @@ import Control.Monad.State (gets)
 import Control.Concurrent.STM (TVar, readTVarIO, atomically, modifyTVar')
 import qualified Data.Map.Strict as Map
 
-import Game.Types.Object (SomeObjectRef(..), SomeObject(..), ObjectRef(..), ObjectData(..), ObjectKind(..), mkInstancedRef, objEnv)
-import Game.Types.Common (ObjectsMap)
+import Game.Types.Object (SomeObjectRef(..), SomeObject(..), ObjectRef(..), ObjectData(..), ObjectKind(..), ObjectsMap, mkInstancedRef, objEnv)
 import Game.Monad (GameM, objectsMap)
 import Game.Actions.Inventory (addToInventory, removeFromInventory)
 

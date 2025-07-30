@@ -17,7 +17,7 @@ import Control.Monad.State (gets)
 import qualified Network.Socket.ByteString as NSB
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
-import Game.Types.Common (PlayerName(..))
+import Game.Types.Player (PlayerName(..))
 
 -- | Registry of all available slash commands
 commandRegistry :: CommandRegistry

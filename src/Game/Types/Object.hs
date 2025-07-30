@@ -33,6 +33,7 @@ Game/
 module Game.Types.Object 
   ( ObjectKind(..)
   , ObjectRef(..)
+  , ObjectsMap
   , showRef
   , Visibility(..)
   , InstancedRef()
@@ -57,6 +58,7 @@ import qualified Data.Text
 import Data.Aeson (ToJSON(..), FromJSON(..), (.=), (.:), object, withObject)
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
+import Data.Map.Strict (Map)
 import Game.Types.Persistable (Persistable(..), defaultSaveObject, defaultLoadObject)
 
 -- Kinds
@@ -68,6 +70,9 @@ data ObjectRef (k :: ObjectKind) where
   InstRef :: Text -> Text -> ObjectRef k
 
 deriving instance Eq (ObjectRef k)
+-- | Type alias for the objects map
+-- Maps object references to object instances
+type ObjectsMap = Map SomeObjectRef SomeObject
 
 instance Ord (ObjectRef k) where
   compare (RoomRef proto1) (RoomRef proto2) = compare proto1 proto2
