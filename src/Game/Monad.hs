@@ -10,6 +10,8 @@ module Game.Monad
   , rawWrite
   , writeLine
   , amWizard
+  , getCommandState
+  , putCommandState
   , CommandState(..)
   ) where
 
@@ -43,3 +45,11 @@ amWizard :: GameM Bool
 amWizard = do
   player <- gets playerObject
   return $ playerIsWizard player
+
+-- | Get the current command state
+getCommandState :: GameM CommandState
+getCommandState = get
+
+-- | Set the command state
+putCommandState :: CommandState -> GameM ()
+putCommandState = put

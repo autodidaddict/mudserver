@@ -28,6 +28,7 @@ library
                        Game.Scripts.ScriptMap,
                        Game.Scripts.LuaCtx,
                        Game.Scripts.Lua,
+                       Game.Driver.DriverFuns,
                        Game.Mudlib.ObjectFuns,
                        Game.Scripts.LuaBindings,
                        Config,

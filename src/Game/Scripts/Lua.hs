@@ -18,6 +18,8 @@ import Game.Scripts.ScriptMap
 import Game.Types.Object (SomeObjectRef(..), ObjectRef(..))
 import Control.Monad (forM_, foldM)
 import Game.Scripts.LuaCtx
+import Game.Monad
+import Game.Driver.DriverFuns (registerGameFunctions)
 
 -- | A sandbox setup runs inside the Lua monad and can alter the global env.
 type SandboxSetup = LuaM ()
@@ -109,6 +111,7 @@ loadScript sandbox path = do
   Control.Exception.try $ Lua.runWith lstate $ do
     Lua.openlibs
     sandbox
+    registerGameFunctions
     status1 <- Lua.loadfile (Just path)
     if status1 /= OK
       then throwLuaError status1
@@ -121,6 +124,7 @@ loadScript sandbox path = do
 -- | Throw a Lua error by failing with a textual message
 throwLuaError :: Status -> LuaM a
 throwLuaError code = Lua.failLua ("Lua error: " <> show code)
+
 
 
 -- | Convenience wrapper using the default sandbox.
