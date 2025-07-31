@@ -17,6 +17,7 @@ import Game.Types.Item
 import Game.Monad (runGameM, CommandState(..), objectsMap)
 import qualified Game.World.GameObjects as GameObjects
 import Game.Scripts.ScriptMap (emptyScriptMap)
+import Config (ServerConfig, defaultConfig)
 
 -- | Create a test room
 createTestRoom :: ObjectData 'RoomK
@@ -58,8 +59,11 @@ createMockCommandState socket = do
   atomically $ modifyTVar' playersTVar $ \plMap ->
     Map.insert pName (socket, player) plMap
   
-  -- Return the CommandState
-  return $ CommandState socket pName player playersTVar objectsTVar scriptMapTVar
+  -- Create a TVar for the Player object
+  playerTVar <- newTVarIO player
+  
+  -- Return the CommandState with default config
+  return $ CommandState socket pName playerTVar playersTVar objectsTVar scriptMapTVar defaultConfig
 
 -- | Helper function to get the objects map from a CommandState
 getObjectsMap :: CommandState -> IO ObjectsMap

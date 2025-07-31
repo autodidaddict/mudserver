@@ -17,6 +17,7 @@ import Game.Types.CommandState
 import Game.Monad
 import Game.World.Movement
 import Game.World.GameObjects
+import Config (ServerConfig, defaultConfig)
 
 -- | Create a test item
 createTestItem :: ObjectData 'ItemK
@@ -59,7 +60,11 @@ createTestCommandState sock objects = do
   scriptMapTVar <- newTVarIO Map.empty
   let player = createTestPlayer
       playerName = PlayerName "testUser"
-  return $ CommandState sock playerName player playerMapTVar objMapTVar scriptMapTVar
+  
+  -- Create a TVar for the player
+  playerTVar <- newTVarIO player
+  
+  return $ CommandState sock playerName playerTVar playerMapTVar objMapTVar scriptMapTVar defaultConfig
 
 -- | Run a GameM action with the given objects
 runWithObjects :: Socket -> Map.Map SomeObjectRef SomeObject -> GameM a -> IO a

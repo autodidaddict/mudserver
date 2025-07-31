@@ -18,6 +18,7 @@ import Game.Monad (runGameM, CommandState(..), objectsMap)
 import Game.World.GameObjects (deleteObject)
 import Game.Actions.Inventory (addToInventory)
 import Game.Scripts.ScriptMap (emptyScriptMap)
+import Config (ServerConfig, defaultConfig)
 
 -- | Create a test room
 createTestRoom :: ObjectData 'RoomK
@@ -77,8 +78,11 @@ createMockCommandState socket = do
         Map.insert (SomeRef roomRef) (SomeObject updatedRoomObj) objMap
     _ -> error "Failed to create instanced references"
   
-  -- Return the CommandState
-  return $ CommandState socket pName player playersTVar objectsTVar scriptMapTVar
+  -- Create a TVar for the Player object
+  playerTVar <- newTVarIO player
+  
+  -- Return the CommandState with default config
+  return $ CommandState socket pName playerTVar playersTVar objectsTVar scriptMapTVar defaultConfig
 
 -- | Helper function to get the objects map from a CommandState
 getObjectsMap :: CommandState -> IO ObjectsMap

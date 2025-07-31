@@ -22,8 +22,8 @@ import Game.Scripts.ScriptMap (emptyScriptMap)
 import Network.Socket (Socket)
 
 -- | Create a dummy CommandState for script loading
-createDummyCommandState :: TVar (Map.Map PlayerName (Socket, Player)) -> TVar ObjectsMap -> IO CommandState
-createDummyCommandState playerMap objectsMap = do
+createDummyCommandState :: ServerConfig -> TVar (Map.Map PlayerName (Socket, Player)) -> TVar ObjectsMap -> IO CommandState
+createDummyCommandState config playerMap objectsMap = do
   -- Create a new empty TVar for the script map
   tempScriptMap <- newTVarIO emptyScriptMap
   
@@ -33,7 +33,10 @@ createDummyCommandState playerMap objectsMap = do
       dummyPlayerRef = InstRef "std.player" "system"
       dummyPlayer = mkDefaultPlayer "system" "" dummyRoom dummyPlayerRef
   
-  return $ CommandState dummySocket dummyName dummyPlayer playerMap objectsMap tempScriptMap
+  -- Create a TVar for the dummyPlayer
+  dummyPlayerTVar <- newTVarIO dummyPlayer
+  
+  return $ CommandState dummySocket dummyName dummyPlayerTVar playerMap objectsMap tempScriptMap config
 
 -- | Main entry point
 main :: IO ()
@@ -42,8 +45,8 @@ main = withSocketsDo $ do
   let config = defaultConfig
   playerMap <- newTVarIO Map.empty
   objectsMap <- newTVarIO preloadRooms
-  dummyState <- createDummyCommandState playerMap objectsMap
-  scriptMapResult <- loadPrototypeList config dummyState (Map.keys preloadRooms)
+  dummyState <- createDummyCommandState config playerMap objectsMap
+  scriptMapResult <- loadPrototypeList dummyState (Map.keys preloadRooms)
   scriptMap <- case scriptMapResult of
     Left err -> do
       putStrLn $ "Error loading scripts: " ++ err

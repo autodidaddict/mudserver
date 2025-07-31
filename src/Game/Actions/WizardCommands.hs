@@ -11,7 +11,8 @@ module Game.Actions.WizardCommands
 import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
 import Control.Monad.State (gets, liftIO)
-import Control.Concurrent.STM (readTVarIO)
+import Control.Concurrent.STM (readTVarIO, atomically, readTVar, writeTVar)
+import Game.World.Movement (move)
 import Game.Actions.Commands (Command(..), CommandHandler, CommandRegistry, handleCommand, createHelpHandler)
 import Game.Monad (GameM, writeLine, playerObject, scriptMap)
 import Game.World.GameObjects (allObjects, getObject)
@@ -24,6 +25,7 @@ wizardCommandRegistry :: CommandRegistry
 wizardCommandRegistry = Map.fromList
   [ ("here", Command cmdHere "Display information about your current environment and list objects in the room")
   , ("allobjects", Command cmdAllObjects "Display a list of all object references in the global object map")
+  , ("teleport", Command cmdTeleport "Teleport to a target location")
   , ("help", Command cmdHelpHandler "Display help for available wizard commands")
   ]
 
@@ -32,10 +34,37 @@ wizardCommandRegistry = Map.fromList
 handleWizardCommand :: T.Text -> GameM Bool
 handleWizardCommand = handleCommand wizardCommandRegistry "@"
 
+-- | Teleport command handler - moves the wizard to the specified target
+cmdTeleport :: CommandHandler
+cmdTeleport args = do
+    case args of
+        [] -> do
+            writeLine "Usage: @teleport <script path>"
+        [target] -> do
+            writeLine "You moved"
+            playerTVar <- gets playerObject
+            player <- liftIO $ atomically $ readTVar playerTVar
+            let playerRef = (objRef (playerBase player))
+            success <- move (SomeRef playerRef) (RoomRef target)
+            if success
+                then do
+                    writeLine "Teleported!"
+                    -- Update the player's base object with the new environment
+                    let playerBase' = (playerBase player) { objEnv = RoomRef target }
+                        updatedPlayer = player { playerBase = playerBase' }
+                    -- Update the player TVar with the updated player object
+                    liftIO $ atomically $ writeTVar playerTVar updatedPlayer
+                else writeLine "Teleport failed."
+        _ -> do
+            writeLine "Huh?"
+
+    return True
+
 -- | Here command handler - shows information about the player's current environment
 cmdHere :: CommandHandler
 cmdHere _ = do
-  player <- gets playerObject
+  playerTVar <- gets playerObject
+  player <- liftIO $ atomically $ readTVar playerTVar
   let envRef = objEnv $ playerBase player
   
   -- Look up the room using getObject

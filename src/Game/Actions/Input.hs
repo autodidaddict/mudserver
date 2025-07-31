@@ -123,16 +123,20 @@ handleClient conn playersTVar objectsTVar scriptMapTVar config = do
 -- | Handle the login process for a player
 loginPlayer :: Socket -> PlayerName -> Player -> TVar (PlayerMap Player) -> TVar ObjectsMap -> TVar ScriptMap -> ServerConfig -> IO ()
 loginPlayer conn name playerObj playersTVar objectsTVar scriptMapTVar config = do
-  -- Create CommandState with the Player object
-  let st = CommandState conn name playerObj playersTVar objectsTVar scriptMapTVar
+  -- Create a TVar for the Player object
+  playerTVar <- atomically $ newTVar playerObj
+  
+  -- Create CommandState with the TVar Player object and server config
+  let st = CommandState conn name playerTVar playersTVar objectsTVar scriptMapTVar config
 
   -- Add player to the global player list with both socket and Player object
   runGameM st $ do
     pl <- gets playerList
-    liftIO $ atomically $ modifyTVar' pl (Map.insert name (conn, playerObj))
+    playerObj' <- liftIO $ atomically $ readTVar playerTVar
+    liftIO $ atomically $ modifyTVar' pl (Map.insert name (conn, playerObj'))
     
     -- Add player to the global objects map
-    let baseObj = playerBase playerObj
+    let baseObj = playerBase playerObj'
     addObject (objRef baseObj) baseObj
     
     -- Add player to their environment's inventory using the common function
@@ -150,11 +154,11 @@ loginPlayer conn name playerObj playersTVar objectsTVar scriptMapTVar config = d
     writeLine "Type /help for available commands."
 
   -- Main command loop
-  commandLoop st config
+  commandLoop st
 
 -- | Main command processing loop
-commandLoop :: CommandState -> ServerConfig -> IO ()
-commandLoop st config = do
+commandLoop :: CommandState -> IO ()
+commandLoop st = do
   let loop = do
         maybeMsgStr <- recvLine (clientSocket st) 1024
         case maybeMsgStr of
@@ -166,10 +170,13 @@ commandLoop st config = do
 
       disconnect = do
         let name = playerName st
-            player = playerObject st
+            playerTVar = playerObject st
+        
+        -- Read the player object from the TVar
+        player <- atomically $ readTVar playerTVar
         
         -- Save player data to file
-        saveResult <- savePlayer (dataDirectory config) player
+        saveResult <- savePlayer (dataDirectory (serverConfig st)) player
         case saveResult of
           Right _ -> putStrLn $ "Saved player data for: " ++ T.unpack (unPlayerName name)
           Left err -> putStrLn $ "Error saving player data: " ++ err

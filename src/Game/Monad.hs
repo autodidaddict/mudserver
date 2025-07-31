@@ -16,6 +16,7 @@ module Game.Monad
   ) where
 
 import Control.Monad.State
+import Control.Concurrent.STM (TVar, atomically, readTVar)
 import qualified Network.Socket.ByteString as NSB
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -43,7 +44,8 @@ writeLine s = rawWrite (s `T.append` "\r\n")
 -- | Check if the current player has wizard privileges
 amWizard :: GameM Bool
 amWizard = do
-  player <- gets playerObject
+  playerTVar <- gets playerObject
+  player <- liftIO $ atomically $ readTVar playerTVar
   return $ playerIsWizard player
 
 -- | Get the current command state

@@ -10,7 +10,7 @@ module Game.World.Movement
 import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.STM (atomically, modifyTVar')
 import qualified Data.Map.Strict as Map
-import Game.Monad (GameM)
+import Game.Monad (GameM, writeLine)
 import Game.Types.Object (SomeObjectRef(..), ObjectRef(..), SomeObject(..), ObjectData(..), ObjectKind(..))
 import Game.World.GameObjects (removeObjectFromEnvironment, addObjectToEnvironment, getObject, allObjects)
 
@@ -44,5 +44,5 @@ move objRef newEnv = do
           
           -- Return True only if both operations were successful
           return addSuccess
-        else
+        else do
           return False

@@ -27,8 +27,9 @@ import Control.Monad (forM_, foldM)
 import Game.Scripts.LuaCtx
 import Game.Monad
 import Control.Monad.State (gets)
-import Control.Concurrent.STM (readTVarIO)
+import Control.Concurrent.STM (readTVarIO, atomically, modifyTVar')
 import Game.Driver.DriverFuns (registerGameFunctions)
+import Game.Monad (GameM, getCommandState, scriptMap)
 
 -- | A sandbox setup runs inside the Lua monad and can alter the global env.
 type SandboxSetup = LuaM ()
@@ -46,12 +47,12 @@ prototypeToFilePath prototype =
 -- | Load a prototype script into the script map
 -- If the prototype is already loaded, does nothing
 -- Returns Either an error message or the updated ScriptMap
-loadPrototype :: (MonadIO m) => ServerConfig -> CommandState -> T.Text -> ScriptMap -> m (Either String ScriptMap)
-loadPrototype config cmdState prototype scriptMap =
+loadPrototype :: (MonadIO m) => CommandState -> T.Text -> ScriptMap -> m (Either String ScriptMap)
+loadPrototype cmdState prototype scriptMap =
   if Map.member prototype scriptMap
     then return (Right scriptMap)  -- Already loaded, do nothing
     else do
-      let dataDir = dataDirectory config
+      let dataDir = dataDirectory (serverConfig cmdState)
           scriptPath = dataDir </> prototypeToFilePath prototype <.> "lua"
 
       fileExists <- liftIO $ doesFileExist scriptPath
@@ -83,8 +84,8 @@ unloadPrototype prototype scriptMap =
 -- Takes a list of SomeObjectRef and calls loadPrototype for each one
 -- Returns Either an error message or the updated ScriptMap
 -- Starts with emptyScriptMap
-loadPrototypeList :: (MonadIO m) => ServerConfig -> CommandState -> [SomeObjectRef] -> m (Either String ScriptMap)
-loadPrototypeList config cmdState refs = do
+loadPrototypeList :: (MonadIO m) => CommandState -> [SomeObjectRef] -> m (Either String ScriptMap)
+loadPrototypeList cmdState refs = do
   -- Extract prototype name from each SomeObjectRef
   let getPrototype (SomeRef (RoomRef proto)) = proto
       getPrototype (SomeRef (InstRef proto _)) = proto
@@ -98,7 +99,7 @@ loadPrototypeList config cmdState refs = do
             Left err -> return (Left err)  -- If we already have an error, just propagate it
             Right scriptMap -> do
               let proto = getPrototype objRef
-              loadPrototype config cmdState proto scriptMap
+              loadPrototype cmdState proto scriptMap
         ) (Right initialMap) refs
 
 
@@ -141,7 +142,7 @@ loadScriptDefault cmdState = loadScript defaultSandbox cmdState
 
 -- | Get a Lua state for script execution.
 -- This gets the Lua state from the loaded script map using the prototype as a key.
--- If the prototype is not found in the script map, creates a new Lua state.
+-- If the prototype is not found in the script map, loads the prototype script and updates the script map.
 getLuaState :: T.Text -> GameM Lua.State
 getLuaState prototype = do
   -- Get the script map from the command state
@@ -152,9 +153,28 @@ getLuaState prototype = do
   case Map.lookup prototype scriptMapVal of
     Just luaState -> return luaState
     Nothing -> do
-      -- If not found, create a new Lua state
-      luaState <- liftIO Lua.newstate
-      -- Open standard libraries
-      liftIO $ Lua.runWith luaState Lua.openlibs
-      return luaState
+      -- If not found, load the prototype script using loadPrototype
+      cmdState <- getCommandState
+      result <- loadPrototype cmdState prototype scriptMapVal
+      
+      case result of
+        Right updatedScriptMap -> do
+          -- Update the script map with the new Lua state
+          liftIO $ atomically $ modifyTVar' scriptMapTVar (const updatedScriptMap)
+          -- Get the Lua state from the updated map
+          case Map.lookup prototype updatedScriptMap of
+            Just luaState -> return luaState
+            -- This should not happen as loadPrototype should have added the state
+            Nothing -> createFallbackLuaState
+        Left _ -> do
+          -- If loading fails, create a new Lua state as fallback
+          createFallbackLuaState
+
+-- | Create a fallback Lua state with standard libraries
+createFallbackLuaState :: GameM Lua.State
+createFallbackLuaState = do
+  luaState <- liftIO Lua.newstate
+  -- Open standard libraries
+  liftIO $ Lua.runWith luaState Lua.openlibs
+  return luaState
 
