@@ -17,9 +17,11 @@ import Control.Monad.State (gets)
 import Control.Concurrent.STM (TVar, readTVarIO, atomically, modifyTVar')
 import qualified Data.Map.Strict as Map
 
-import Game.Types.Object (SomeObjectRef(..), SomeObject(..), ObjectRef(..), ObjectData(..), ObjectKind(..), ObjectsMap, mkInstancedRef, objEnv)
+import Game.Types.Object (SomeObjectRef(..), SomeObject(..), ObjectRef(..), ObjectData(..), ObjectKind(..), ObjectsMap, mkInstancedRef, objEnv, getRef)
 import Game.Monad (GameM, objectsMap)
 import Game.Actions.Inventory (addToInventory, removeFromInventory)
+import Game.Mudlib.ObjectFuns (notifyEnteredInv)
+import Game.Scripts.Lua (getLuaState)
 
 -- | Get the map of all game objects
 allObjects :: GameM (TVar ObjectsMap)
@@ -80,34 +82,44 @@ addObjectToEnvironment ref = do
         Just (SomeObject roomObj) -> do
           -- Handle different object types
           case ref of
-            SomeRef instRef@(InstRef _ _) -> do
-              -- Handle different types of objects
-              case instRef of
-                -- Handle player objects
-                InstRef "std.player" objId -> 
-                  case mkInstancedRef (InstRef "std.player" objId :: ObjectRef 'PlayerK) of
-                    Just instRef' -> do
-                      -- Add the object to the room's inventory
-                      let updatedRoomObj = addToInventory roomObj instRef'
-                      -- Update the room in the global object map
-                      objMapTVar <- allObjects
-                      liftIO $ atomically $ modifyTVar' objMapTVar 
-                        (Map.insert (SomeRef envRef) (SomeObject updatedRoomObj))
-                      return True
-                    Nothing -> return False
+            -- Handle player objects
+            SomeRef (InstRef "std.player" objId) -> do
+              let playerRef = InstRef "std.player" objId :: ObjectRef 'PlayerK
+              case mkInstancedRef playerRef of
+                Just instRef' -> do
+                  -- Add the object to the room's inventory
+                  let updatedRoomObj = addToInventory roomObj instRef'
+                  -- Update the room in the global object map
+                  objMapTVar <- allObjects
+                  liftIO $ atomically $ modifyTVar' objMapTVar 
+                    (Map.insert (SomeRef envRef) (SomeObject updatedRoomObj))
+                  
+                  -- Notify that the object entered the inventory
+                  luaState <- getLuaState "std.player"
+                  _ <- liftIO $ notifyEnteredInv (SomeRef envRef) (SomeRef (getRef instRef')) luaState
+                  
+                  return True
+                Nothing -> return False
                 
-                -- Handle item objects
-                InstRef proto objId -> 
-                  case mkInstancedRef (InstRef proto objId :: ObjectRef 'ItemK) of
-                    Just instRef' -> do
-                      -- Add the object to the room's inventory
-                      let updatedRoomObj = addToInventory roomObj instRef'
-                      -- Update the room in the global object map
-                      objMapTVar <- allObjects
-                      liftIO $ atomically $ modifyTVar' objMapTVar 
-                        (Map.insert (SomeRef envRef) (SomeObject updatedRoomObj))
-                      return True
-                    Nothing -> return False
+            -- Handle item objects
+            SomeRef (InstRef proto objId) -> do
+              let itemRef = InstRef proto objId :: ObjectRef 'ItemK
+              case mkInstancedRef itemRef of
+                Just instRef' -> do
+                  -- Add the object to the room's inventory
+                  let updatedRoomObj = addToInventory roomObj instRef'
+                  -- Update the room in the global object map
+                  objMapTVar <- allObjects
+                  liftIO $ atomically $ modifyTVar' objMapTVar 
+                    (Map.insert (SomeRef envRef) (SomeObject updatedRoomObj))
+                  
+                  -- Notify that the object entered the inventory
+                  luaState <- getLuaState proto
+                  _ <- liftIO $ notifyEnteredInv (SomeRef envRef) (SomeRef (getRef instRef')) luaState
+                  
+                  return True
+                Nothing -> return False
+                
             _ -> return False -- Not an instantiable object
 
 -- | Remove an object from its environment
@@ -137,32 +149,32 @@ removeObjectFromEnvironment ref = do
         Just (SomeObject roomObj) -> do
           -- Handle different object types
           case ref of
-            SomeRef instRef@(InstRef _ _) -> do
-              -- Handle different types of objects
-              case instRef of
-                -- Handle player objects
-                InstRef "std.player" objId -> 
-                  case mkInstancedRef (InstRef "std.player" objId :: ObjectRef 'PlayerK) of
-                    Just instRef' -> do
-                      -- Remove the object from the room's inventory
-                      let updatedRoomObj = removeFromInventory roomObj instRef'
-                      -- Update the room in the global object map
-                      objMapTVar <- allObjects
-                      liftIO $ atomically $ modifyTVar' objMapTVar 
-                        (Map.insert (SomeRef envRef) (SomeObject updatedRoomObj))
-                      return True
-                    Nothing -> return False
+            -- Handle player objects
+            SomeRef (InstRef "std.player" objId) -> do
+              let playerRef = InstRef "std.player" objId :: ObjectRef 'PlayerK
+              case mkInstancedRef playerRef of
+                Just instRef' -> do
+                  -- Remove the object from the room's inventory
+                  let updatedRoomObj = removeFromInventory roomObj instRef'
+                  -- Update the room in the global object map
+                  objMapTVar <- allObjects
+                  liftIO $ atomically $ modifyTVar' objMapTVar 
+                    (Map.insert (SomeRef envRef) (SomeObject updatedRoomObj))
+                  return True
+                Nothing -> return False
                 
-                -- Handle item objects
-                InstRef proto objId -> 
-                  case mkInstancedRef (InstRef proto objId :: ObjectRef 'ItemK) of
-                    Just instRef' -> do
-                      -- Remove the object from the room's inventory
-                      let updatedRoomObj = removeFromInventory roomObj instRef'
-                      -- Update the room in the global object map
-                      objMapTVar <- allObjects
-                      liftIO $ atomically $ modifyTVar' objMapTVar 
-                        (Map.insert (SomeRef envRef) (SomeObject updatedRoomObj))
-                      return True
-                    Nothing -> return False
+            -- Handle item objects
+            SomeRef (InstRef proto objId) -> do
+              let itemRef = InstRef proto objId :: ObjectRef 'ItemK
+              case mkInstancedRef itemRef of
+                Just instRef' -> do
+                  -- Remove the object from the room's inventory
+                  let updatedRoomObj = removeFromInventory roomObj instRef'
+                  -- Update the room in the global object map
+                  objMapTVar <- allObjects
+                  liftIO $ atomically $ modifyTVar' objMapTVar 
+                    (Map.insert (SomeRef envRef) (SomeObject updatedRoomObj))
+                  return True
+                Nothing -> return False
+                
             _ -> return False -- Not an instantiable object

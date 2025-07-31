@@ -2,13 +2,20 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Game.Scripts.Lua where
+module Game.Scripts.Lua 
+  ( loadPrototype
+  , unloadPrototype
+  , loadPrototypeList
+  , loadScript
+  , loadScriptDefault
+  , getLuaState
+  ) where
 
 import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
 import System.FilePath ((</>), (<.>))
 import System.Directory (doesFileExist)
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Config (ServerConfig(..))
 import Data.List (intercalate)
 import HsLua.Core
@@ -19,6 +26,8 @@ import Game.Types.Object (SomeObjectRef(..), ObjectRef(..))
 import Control.Monad (forM_, foldM)
 import Game.Scripts.LuaCtx
 import Game.Monad
+import Control.Monad.State (gets)
+import Control.Concurrent.STM (readTVarIO)
 import Game.Driver.DriverFuns (registerGameFunctions)
 
 -- | A sandbox setup runs inside the Lua monad and can alter the global env.
@@ -129,4 +138,23 @@ throwLuaError code = Lua.failLua ("Lua error: " <> show code)
 -- | Convenience wrapper using the default sandbox.
 loadScriptDefault :: CommandState -> FilePath -> IO (Either SomeException Lua.State)
 loadScriptDefault cmdState = loadScript defaultSandbox cmdState
+
+-- | Get a Lua state for script execution.
+-- This gets the Lua state from the loaded script map using the prototype as a key.
+-- If the prototype is not found in the script map, creates a new Lua state.
+getLuaState :: T.Text -> GameM Lua.State
+getLuaState prototype = do
+  -- Get the script map from the command state
+  scriptMapTVar <- gets scriptMap
+  scriptMapVal <- liftIO $ readTVarIO scriptMapTVar
+  
+  -- Look up the prototype in the script map
+  case Map.lookup prototype scriptMapVal of
+    Just luaState -> return luaState
+    Nothing -> do
+      -- If not found, create a new Lua state
+      luaState <- liftIO Lua.newstate
+      -- Open standard libraries
+      liftIO $ Lua.runWith luaState Lua.openlibs
+      return luaState
 

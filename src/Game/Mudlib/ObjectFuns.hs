@@ -3,6 +3,7 @@
 
 module Game.Mudlib.ObjectFuns
   ( getShort
+  , notifyEnteredInv
   ) where
 
 import HsLua as Lua hiding (error, try)

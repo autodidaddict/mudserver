@@ -25,6 +25,7 @@ library
                        Game.Monad,
                        Game.Actions.SlashCommands,
                        Game.World.GameObjects,
+                       Game.World.Movement,
                        Game.Scripts.ScriptMap,
                        Game.Scripts.LuaCtx,
                        Game.Scripts.Lua,
@@ -79,7 +80,8 @@ test-suite mudserver-test
                        Game.Actions.InventorySpec,
                        Game.Types.ItemSpec,
                        Game.MonadSpec,
-                       Game.Scripts.LuaBindingsSpec
+                       Game.Scripts.LuaBindingsSpec,
+                       Game.World.MovementSpec
   hs-source-dirs:      test
   build-depends:       base >=4.7 && <5,
                        mudserver,
@@ -93,6 +95,7 @@ test-suite mudserver-test
                        filepath,
                        stm,
                        network,
+                       mtl,
                        hslua             >= 2.4 && < 2.5
   build-tool-depends:  hspec-discover:hspec-discover
   default-language:    Haskell2010
