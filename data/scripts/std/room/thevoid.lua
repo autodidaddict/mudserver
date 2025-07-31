@@ -1,5 +1,5 @@
 function short()
-    tellPlayer("kevin", "You're in the void, bruh")
+    tellPlayer("std.player#kevin", "You're in the void, bruh")
     return "This is the void"
 end
 

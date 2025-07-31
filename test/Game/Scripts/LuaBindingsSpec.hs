@@ -52,26 +52,52 @@ checkEnteredInvCalled = do
           pop 1
           return result
 
+-- | Check if the ob parameter's ref field is correct
+checkCorrectObRef :: LuaM Bool
+checkCorrectObRef = do
+  _ <- getglobal "has_correct_ob_ref"
+  isFunc <- isfunction (-1)
+  if not isFunc
+    then do
+      pop 1
+      error "has_correct_ob_ref is not defined or not a function"
+    else do
+      callStatus <- pcall 0 1 Nothing
+      if callStatus /= OK
+        then do
+          errorMsg <- tostring (-1)
+          error $ "Error calling has_correct_ob_ref: " ++ 
+            maybe "unknown error" BS8.unpack errorMsg
+        else do
+          result <- toboolean (-1)
+          pop 1
+          return result
+
 spec :: Spec
 spec = do
   describe "notifyEnteredInvAction" $ do
     it "calls the on_entered_inv Lua function with object references" $ do
       -- Create test object references
-      let fromObj = SomeRef (RoomRef "test.room")
+      let fromRoom = RoomRef "test.room"
           toObj = SomeRef (InstRef "test.player" "player1")
           
       -- Get the path to the test script
       let scriptPath = "test" </> "Game" </> "Scripts" </> "test_on_entered_inv.lua"
       
       -- Run the test with the script
-      result <- withLuaScript scriptPath $ do
+      (wasCalled, hasCorrectRef) <- withLuaScript scriptPath $ do
         -- Call notifyEnteredInvAction with the test objects
-        notifyResult <- notifyEnteredInvAction fromObj toObj
+        notifyResult <- notifyEnteredInvAction toObj fromRoom
         case notifyResult of
           Left err -> error $ "notifyEnteredInvAction failed: " ++ err
           Right _ -> do
             -- Check if the entered_inv_called variable was set to true
-            checkEnteredInvCalled
+            wasCalled <- checkEnteredInvCalled
+            -- Check if the ob parameter's ref field is correct
+            hasCorrectRef <- checkCorrectObRef
+            return (wasCalled, hasCorrectRef)
       
       -- Verify that the function was called
-      result `shouldBe` True
+      wasCalled `shouldBe` True
+      -- Verify that the ob parameter's ref field is correct
+      hasCorrectRef `shouldBe` True

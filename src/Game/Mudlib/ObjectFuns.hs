@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Game.Mudlib.ObjectFuns
@@ -12,22 +13,20 @@ import HsLua.Core.Error()
 import Control.Exception (try, SomeException)
 import Game.Scripts.LuaBindings
 import qualified Data.ByteString.Char8 as BS8
-import Game.Types.Object (SomeObjectRef)
+import Game.Types.Object (ObjectRef(..), SomeObjectRef(..), ObjectKind(..))
 
 -- | Get the short description of an object by calling the "short" function in Lua.
--- Returns Either an error message or the short description string.
-getShort :: Lua.State -> IO (Either String String)
+-- Returns the short description string or "An object" if an error occurs.
+getShort :: Lua.State -> IO String
 getShort luaState = do
-  result <- try (runWith luaState getShortAction)
+  result <- try (runWith luaState getShortAction) :: IO (Either SomeException (Either String String))
 
   case result of
-    Left (e :: SomeException) -> return $ Left $ "Exception: " ++ show e
-    Right r                   -> return r
+      Right (Right s)          -> return s
+      _ -> return "An object"
 
-notifyEnteredInv :: SomeObjectRef -> SomeObjectRef-> Lua.State -> IO (Either String ())
-notifyEnteredInv mover target luaState = do
-    result <- try (runWith luaState $ notifyEnteredInvAction mover target)
 
-    case result of
-        Left (e :: SomeException) -> return $ Left $ "Exception:" ++ show e
-        Right r                   -> return r
+notifyEnteredInv :: SomeObjectRef -> ObjectRef 'RoomK -> Lua.State -> IO ()
+notifyEnteredInv objectRef fromRef luaState = do
+    _ <- try (runWith luaState $ notifyEnteredInvAction objectRef fromRef) :: IO (Either SomeException (Either String ()))
+    return ()

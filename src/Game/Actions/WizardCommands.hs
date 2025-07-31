@@ -87,10 +87,8 @@ cmdHere _ = do
           case Map.lookup protoName scriptMapValue of
             Just luaState -> do
               -- Call getShort on the Lua state
-              shortResult <- liftIO $ getShort luaState
-              case shortResult of
-                Right shortDesc -> writeLine $ "\n" <> T.pack shortDesc <> "\n"
-                Left err -> writeLine $ "Error getting short description: " <> T.pack err
+              shortDesc <- liftIO $ getShort luaState
+              writeLine $ "\n" <> T.pack shortDesc <> "\n"
             Nothing -> 
               writeLine $ "No script found for prototype: " <> protoName
         _ -> 

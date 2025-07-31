@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds #-}
 
 module Game.Scripts.LuaBindings
   ( getShortAction,
@@ -11,7 +12,7 @@ module Game.Scripts.LuaBindings
 import HsLua
 import qualified Data.ByteString.Char8 as BS8
 import Game.Scripts.LuaCtx
-import Game.Types.Object (SomeObjectRef(SomeRef))
+import Game.Types.Object (SomeObjectRef(SomeRef), ObjectRef(..), ObjectKind(..))
 
 -- | Uses Lua's createtable to push a table onto the
 -- stack with two fields: ref and name that correspond to
@@ -32,11 +33,11 @@ pushObjectRef (SomeRef ref) = do
 
 -- | Calls the on_entered_inv Lua function, using pushObjectRef to
 -- add the object references as tables
-notifyEnteredInvAction :: SomeObjectRef -> SomeObjectRef -> LuaM (Either String ())
-notifyEnteredInvAction from to = do
+notifyEnteredInvAction :: SomeObjectRef -> ObjectRef 'RoomK -> LuaM (Either String ())
+notifyEnteredInvAction object from  = do
     -- Get the global Lua function named "on_entered_inv"
-    _ <- getglobal "on_entered_inv"
-    
+    _<- getglobal "on_entered_inv"
+
     -- Check if it's a function
     isFunc <- isfunction (-1)
     if not isFunc
@@ -45,8 +46,8 @@ notifyEnteredInvAction from to = do
         return $ Left "on_entered_inv is not defined or not a function"
       else do
         -- Push the object references as tables
-        pushObjectRef to    -- The object that entered the inventory
-        pushObjectRef from  -- The object from which it came
+        pushObjectRef object-- The object that entered the inventory
+        pushObjectRef (SomeRef from)-- The object from which it came
         
         -- Call the function with 2 arguments and 0 results
         callStatus <- pcall 2 0 Nothing

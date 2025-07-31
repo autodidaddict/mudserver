@@ -21,15 +21,16 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Data.Map.Strict as Map
 
 import Game.Types.Player (PlayerName(..), PlayerMap)
-import Game.Monad (GameM, CommandState(..), runGameM, writeLine, amWizard)
+import Game.Monad (GameM, CommandState(..), runGameM, writeLine, amWizard, getCommandState)
 import Game.World.GameObjects (addObject, deleteObject, addObjectToEnvironment)
 import Game.Actions.SlashCommands (handleSlashCommand)
 import Game.Actions.WizardCommands (handleWizardCommand)
 import Game.Scripts.ScriptMap (ScriptMap)
+import Game.Scripts.Lua (loadPrototype)
 import Config (ServerConfig(..))
 import Network (recvLine, sendLine, promptForInput, promptForPassword)
 import Game.Types.Player (savePlayer, loadPlayer, mkDefaultPlayer, Player(playerBase, playerPasswordHash))
-import Game.Types.Object (ObjectRef(..), SomeObjectRef(..), objRef, ObjectsMap)
+import Game.Types.Object (ObjectRef(..), SomeObjectRef(..), objRef, objEnv, getProto, ObjectsMap)
 import PasswordHash (hashPassword, verifyPassword)
 
 -- | Handle a client connection
@@ -138,6 +139,23 @@ loginPlayer conn name playerObj playersTVar objectsTVar scriptMapTVar config = d
     -- Add player to the global objects map
     let baseObj = playerBase playerObj'
     addObject (objRef baseObj) baseObj
+
+    -- Get the player's environment reference and prototype
+    let envRef = objEnv baseObj
+        protoName = getProto envRef
+    
+    -- Load the environment's prototype script before adding the player to it
+    cmdState <- getCommandState
+    scriptMapTVar <- gets scriptMap
+    scriptMapVal <- liftIO $ readTVarIO scriptMapTVar
+    result <- loadPrototype cmdState protoName scriptMapVal
+    
+    -- Update the script map if loading was successful
+    case result of
+      Right updatedScriptMap -> 
+        liftIO $ atomically $ modifyTVar' scriptMapTVar (const updatedScriptMap)
+      Left err ->
+        liftIO $ putStrLn $ "Warning: Could not load prototype " ++ T.unpack protoName ++ ": " ++ err
     
     -- Add player to their environment's inventory using the common function
     let playerObjRef = objRef baseObj

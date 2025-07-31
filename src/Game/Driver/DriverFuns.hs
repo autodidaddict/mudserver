@@ -38,25 +38,31 @@ factorial = defun "factorial"
 -- | Tell player function.
 tellPlayer :: LuaError e => CommandState -> DocumentedFunction e
 tellPlayer cmdState = defun "tellPlayer"
-  ### (\targetName message -> do
+  ### (\targetRef message -> do
         let gameAction = do
               pl <- gets playerList
               from <- gets playerName
               players <- liftIO $ atomically $ readTVar pl
-              let target = PlayerName (T.pack targetName)
+              -- Parse the targetRef (format: "prototype#objId") to extract the player name
+              let pName = case T.splitOn "#" (T.pack targetRef) of
+                    -- If the targetRef contains a '#', take the part after it
+                    [_, playerId] -> playerId
+                    -- If there's no '#', use the whole string (fallback)
+                    _ -> T.pack targetRef
+                  target = PlayerName pName
                   messageText = T.pack message
-              
+
               case Map.lookup target players of
                 Just (sock, _) -> do
                   let formattedMsg = unPlayerName from <> " tells you: " <> messageText <> "\r\n"
                   liftIO $ NSB.sendAll sock $ TE.encodeUtf8 formattedMsg
                   return True
-                Nothing -> 
+                Nothing ->
                   return False
         result <- liftGameM cmdState gameAction
         return result
       )
-  <#> parameter peekString "string" "targetName" "name of the player to send message to"
+  <#> parameter peekString "string" "targetRef" "ref of the player to send message to"
   <#> parameter peekString "string" "message" "message to send"
   =#> functionResult pushBool "boolean" "true if message was sent, false if player not found"
   #? "Sends a message to a player."

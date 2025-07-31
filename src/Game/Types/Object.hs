@@ -39,6 +39,7 @@ module Game.Types.Object
   , InstancedRef()
   , mkInstancedRef
   , getRef
+  , getProto
   , IsInstantiable
   , SomeInstRef(..)
   , SomeObjectRef(..)
@@ -86,6 +87,10 @@ instance Ord (ObjectRef k) where
 showRef :: ObjectRef k -> Text
 showRef (RoomRef proto)    = proto
 showRef (InstRef proto objId) = proto <> "#" <> objId
+
+getProto :: ObjectRef k -> Text
+getProto (RoomRef proto) = proto
+getProto (InstRef proto _) = proto
 
 instance Show (ObjectRef k) where
   show = Data.Text.unpack . showRef
