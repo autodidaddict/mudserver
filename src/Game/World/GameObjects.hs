@@ -18,10 +18,11 @@ import Control.Concurrent.STM (TVar, readTVarIO, atomically, modifyTVar')
 import qualified Data.Map.Strict as Map
 
 import Game.Types.Object (SomeObjectRef(..), SomeObject(..), ObjectRef(..), ObjectData(..), ObjectKind(..), ObjectsMap, mkInstancedRef, objEnv, getRef)
-import Game.Monad (GameM, objectsMap)
+import Game.Monad (GameM, objectsMap, scriptMap)
 import Game.Actions.Inventory (addToInventory, removeFromInventory)
 import Game.Mudlib.ObjectFuns (notifyEnteredInv)
 import Game.Scripts.Lua (getLuaState)
+import Game.Types.Room (Room(..), mkDefaultRoom)
 
 -- | Get the map of all game objects
 allObjects :: GameM (TVar ObjectsMap)
@@ -76,9 +77,25 @@ addObjectToEnvironment ref = do
       -- Get the environment object
       maybeEnvObj <- getObject (SomeRef envRef)
       
-      -- Early return if environment doesn't exist
+      -- If environment doesn't exist, add it to the global object map and load its script
       case maybeEnvObj of
-        Nothing -> return False
+        Nothing -> do
+          -- Get the prototype name from the environment reference
+          case envRef of
+            RoomRef proto -> do
+              -- Create a default room and add it to the global object map
+              let roomName = proto  -- Using the prototype name as the room name for simplicity
+                  defaultRoom = mkDefaultRoom proto roomName
+                  roomData = roomBase defaultRoom
+              addObject envRef roomData
+              
+              -- Load the prototype's script into the global script map
+              -- Using getLuaState which will create a new Lua state if it doesn't exist
+              _ <- getLuaState proto
+              return True
+            
+            _ -> return False  -- Not a room reference
+            
         Just (SomeObject roomObj) -> do
           -- Handle different object types
           case ref of

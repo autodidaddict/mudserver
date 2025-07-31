@@ -5,7 +5,8 @@ module Game.World.MovementSpec (spec) where
 
 import Test.Hspec
 import Control.Monad.State (evalStateT)
-import Control.Concurrent.STM (newTVarIO)
+import Control.Monad.IO.Class (liftIO)
+import Control.Concurrent.STM (newTVarIO, readTVarIO)
 import qualified Data.Map.Strict as Map
 import Network.Socket (Socket)
 import Data.Text (Text)
@@ -124,7 +125,7 @@ spec = do
       -- Verify that the move failed
       result `shouldBe` False
     
-    it "returns False when the destination environment doesn't exist" $ do
+    it "verifies that the destination environment is loaded when it doesn't exist" $ do
       -- Create test objects
       let sourceRoom = createSourceRoom
           item = createTestItem
@@ -141,11 +142,18 @@ spec = do
             ]
       
       -- Run the move function with a non-existent destination
-      result <- runWithObjects mockSocket initialObjects $ do
+      (result, objMap) <- runWithObjects mockSocket initialObjects $ do
         -- First add the item to the source room's inventory
         _ <- addObjectToEnvironment itemRef
         -- Then try to move the item to a non-existent room
-        move itemRef nonExistentRoomRef
+        moveResult <- move itemRef nonExistentRoomRef
+        -- Get the updated objects map to verify the environment was loaded
+        objMapTVar <- allObjects
+        objMap <- liftIO $ readTVarIO objMapTVar
+        return (moveResult, objMap)
       
-      -- Verify that the move failed
-      result `shouldBe` False
+      -- Verify that the move was successful
+      result `shouldBe` True
+      
+      -- Verify that the destination environment was loaded
+      Map.member (SomeRef nonExistentRoomRef) objMap `shouldBe` True
