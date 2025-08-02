@@ -13,7 +13,7 @@ import qualified Data.Map.Strict as Map
 import Control.Monad.State (gets, liftIO)
 import Control.Concurrent.STM (readTVarIO, atomically, readTVar, writeTVar)
 import Game.World.Movement (move)
-import Game.Actions.Commands (Command(..), CommandHandler, CommandRegistry, handleCommand, createHelpHandler)
+import Game.Actions.Commands (Command(..), CommandHandler, CommandRegistry, handleCommand, createHelpHandler, registerCommand)
 import Game.Monad (GameM, writeLine, playerObject, getCurrentPlayer, getCurrentEnvironment, 
                   displayRoomDescription, listObjectsInContainer, handleCommandResult)
 import Game.World.GameObjects (allObjects, getObject)
@@ -22,12 +22,16 @@ import Game.Types.Player (Player(..))
 
 -- | Registry of all available wizard commands
 wizardCommandRegistry :: CommandRegistry
-wizardCommandRegistry = Map.fromList
-  [ ("here", Command cmdHere "Display information about your current environment and list objects in the room")
-  , ("allobjects", Command cmdAllObjects "Display a list of all object references in the global object map")
-  , ("teleport", Command cmdTeleport "Teleport to a target location")
-  , ("help", Command cmdHelpHandler "Display help for available wizard commands")
-  ]
+wizardCommandRegistry = 
+  let emptyRegistry = Map.empty
+      hereCmd = Command { cmdHandler = cmdHere, cmdHelp = "Display information about your current environment and list objects in the room", cmdPrimary = "" }
+      allObjectsCmd = Command { cmdHandler = cmdAllObjects, cmdHelp = "Display a list of all object references in the global object map", cmdPrimary = "" }
+      teleportCmd = Command { cmdHandler = cmdTeleport, cmdHelp = "Teleport to a target location", cmdPrimary = "" }
+      helpCmd = Command { cmdHandler = cmdHelpHandler, cmdHelp = "Display help for available wizard commands", cmdPrimary = "" }
+  in registerCommand ["here", "where"] hereCmd $
+     registerCommand ["allobjects", "objects", "objs"] allObjectsCmd $
+     registerCommand ["teleport", "tp", "goto"] teleportCmd $
+     registerCommand ["help"] helpCmd emptyRegistry
 
 -- | Handle wizard commands (commands that start with '@')
 -- These commands are only available to players with the isWizard flag

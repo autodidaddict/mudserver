@@ -7,7 +7,7 @@ module Game.Actions.MortalCommands
   , commandRegistry
   ) where
 
-import Game.Actions.Commands (Command(..), CommandHandler, CommandRegistry, handleCommand, createHelpHandler)
+import Game.Actions.Commands (Command(..), CommandHandler, CommandRegistry, handleCommand, createHelpHandler, registerCommand)
 import Game.Monad (GameM, writeLine, getCurrentEnvironment, displayRoomDescription)
 import Game.Types.Object (SomeObjectRef(..), ObjectRef(..))
 import qualified Data.Map.Strict as Map
@@ -17,10 +17,12 @@ import Game.Types.Room
 
 -- | Registry of all available mortal commands
 commandRegistry :: CommandRegistry
-commandRegistry = Map.fromList
-  [ ("look", Command cmdExamine "Examine (look at) some object or the current environment")
-  , ("help", Command cmdHelpHandler "Display help for available commands")
-  ]
+commandRegistry = 
+  let emptyRegistry = Map.empty
+      lookCmd = Command { cmdHandler = cmdExamine, cmdHelp = "Examine (look at) some object or the current environment", cmdPrimary = "" }
+      helpCmd = Command { cmdHandler = cmdHelpHandler, cmdHelp = "Display help for available commands", cmdPrimary = "" }
+  in registerCommand ["look", "examine", "ex", "l"] lookCmd $
+     registerCommand ["help"] helpCmd emptyRegistry
 
 -- | Handle mortal commands (no prefix)
 handleMortalCommand :: T.Text -> GameM Bool

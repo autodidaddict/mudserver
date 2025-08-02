@@ -8,7 +8,7 @@ module Game.Actions.SlashCommands
   , commandRegistry
   ) where
 
-import Game.Actions.Commands (Command(..), CommandHandler, CommandRegistry, handleCommand, createHelpHandler)
+import Game.Actions.Commands (Command(..), CommandHandler, CommandRegistry, handleCommand, createHelpHandler, registerCommand)
 import Game.Monad (GameM, writeLine, playerList, playerName, handleCommandResult)
 import qualified Data.Map.Strict as Map
 import Control.Monad.IO.Class (liftIO)
@@ -21,12 +21,16 @@ import Game.Types.Player (PlayerName(..))
 
 -- | Registry of all available slash commands
 commandRegistry :: CommandRegistry
-commandRegistry = Map.fromList
-  [ ("quit", Command cmdQuit "Disconnect from the server")
-  , ("who", Command cmdWho "List all connected players")
-  , ("tell", Command cmdTell "Send a private message to another player")
-  , ("help", Command cmdHelpHandler "Display help for available commands")
-  ]
+commandRegistry = 
+  let emptyRegistry = Map.empty
+      quitCmd = Command { cmdHandler = cmdQuit, cmdHelp = "Disconnect from the server", cmdPrimary = "" }
+      whoCmd = Command { cmdHandler = cmdWho, cmdHelp = "List all connected players", cmdPrimary = "" }
+      tellCmd = Command { cmdHandler = cmdTell, cmdHelp = "Send a private message to another player", cmdPrimary = "" }
+      helpCmd = Command { cmdHandler = cmdHelpHandler, cmdHelp = "Display help for available commands", cmdPrimary = "" }
+  in registerCommand ["quit", "exit", "logout"] quitCmd $
+     registerCommand ["who", "players"] whoCmd $
+     registerCommand ["tell", "whisper", "w"] tellCmd $
+     registerCommand ["help"] helpCmd emptyRegistry
 
 -- | Handle slash commands
 handleSlashCommand :: T.Text -> GameM Bool
