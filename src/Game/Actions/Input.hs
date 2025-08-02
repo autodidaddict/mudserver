@@ -25,6 +25,7 @@ import Game.Monad (GameM, CommandState(..), runGameM, writeLine, amWizard, getCo
 import Game.World.GameObjects (addObject, deleteObject, addObjectToEnvironment)
 import Game.Actions.SlashCommands (handleSlashCommand)
 import Game.Actions.WizardCommands (handleWizardCommand)
+import Game.Actions.MortalCommands (handleMortalCommand)
 import Game.Scripts.ScriptMap (ScriptMap)
 import Game.Scripts.Lua (loadPrototype)
 import Config (ServerConfig(..))
@@ -225,5 +226,9 @@ handleCommand msg
           writeLine "You don't have permission to use wizard commands."
           return True
   | otherwise = do
-      writeLine ("You said: " <> msg)
-      return True
+      handled <- handleMortalCommand msg
+      if handled
+        then return True
+        else do
+          writeLine "unknown command"
+          return True

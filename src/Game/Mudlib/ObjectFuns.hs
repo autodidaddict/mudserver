@@ -12,7 +12,6 @@ import HsLua as Lua hiding (error, try)
 import HsLua.Core.Error()
 import Control.Exception (try, SomeException)
 import Game.Scripts.LuaBindings
-import qualified Data.ByteString.Char8 as BS8
 import Game.Types.Object (ObjectRef(..), SomeObjectRef(..), ObjectKind(..))
 
 -- | Get the short description of an object by calling the "short" function in Lua.
@@ -24,7 +23,6 @@ getShort luaState = do
   case result of
       Right (Right s)          -> return s
       _ -> return "An object"
-
 
 notifyEnteredInv :: SomeObjectRef -> ObjectRef 'RoomK -> Lua.State -> IO ()
 notifyEnteredInv objectRef fromRef luaState = do

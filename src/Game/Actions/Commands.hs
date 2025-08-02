@@ -36,7 +36,8 @@ handleCommand registry prefix input =
       case Map.lookup cmd registry of
         Just command -> cmdHandler command args
         Nothing -> do
-          writeLine $ "Unknown " <> prefix <> " command: " <> prefix <> cmd
+          if T.length prefix == 0 then writeLine $ "Unknown command: " <> cmd
+          else writeLine $ "Unknown " <> prefix <> " command: " <> prefix <> cmd
           return True
 
 -- | Create a help command handler for a command registry

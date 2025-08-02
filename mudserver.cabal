@@ -22,6 +22,7 @@ library
                        Game.Actions.Input,
                        Game.Actions.Commands,
                        Game.Actions.WizardCommands,
+                       Game.Actions.MortalCommands,
                        Game.Monad,
                        Game.Actions.SlashCommands,
                        Game.World.GameObjects,
