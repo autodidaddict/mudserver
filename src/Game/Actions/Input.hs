@@ -83,7 +83,6 @@ handleClient conn playersTVar objectsTVar scriptMapTVar config = do
 
           -- Try to load existing player or create a new one
           let username = unPlayerName name
-              startingRoom = RoomRef "std.room.thevoid"
               playerRef = InstRef "std.player" username
           
           -- Hash the password
@@ -117,7 +116,8 @@ handleClient conn playersTVar objectsTVar scriptMapTVar config = do
             Left err -> do
               -- Create new player
               putStrLn $ "Creating new player: " ++ T.unpack username ++ " (Reason: " ++ err ++ ")"
-              let playerObj = mkDefaultPlayer username passwordHash startingRoom playerRef
+              let startingRoom = RoomRef "std.room.thevoid"
+                  playerObj = mkDefaultPlayer username passwordHash startingRoom playerRef
               
               -- Continue with login process
               loginPlayer conn name playerObj playersTVar objectsTVar scriptMapTVar config

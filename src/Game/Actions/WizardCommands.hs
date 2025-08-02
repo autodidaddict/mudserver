@@ -11,13 +11,13 @@ module Game.Actions.WizardCommands
 import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
 import Control.Monad.State (gets, liftIO)
-import Control.Concurrent.STM (readTVarIO, atomically, readTVar, writeTVar)
+import Control.Concurrent.STM (readTVarIO, atomically, writeTVar)
 import Game.World.Movement (move)
 import Game.Actions.Commands (Command(..), CommandHandler, CommandRegistry, handleCommand, createHelpHandler, registerCommand)
 import Game.Monad (GameM, writeLine, playerObject, getCurrentPlayer, getCurrentEnvironment, 
                   displayRoomDescription, listObjectsInContainer, handleCommandResult)
 import Game.World.GameObjects (allObjects, getObject)
-import Game.Types.Object (showRef, objName, SomeObjectRef(..), SomeObject(..), objRef, objEnv, ObjectRef(..))
+import Game.Types.Object (showRef, SomeObjectRef(..), SomeObject(..), objRef, objEnv, ObjectRef(..))
 import Game.Types.Player (Player(..))
 
 -- | Registry of all available wizard commands
@@ -85,7 +85,7 @@ cmdHere _ = do
   
   -- Display objects in the room if found
   case room of
-    Just someObj@(SomeObject roomObj) -> 
+    Just someObj@(SomeObject _) -> 
       listObjectsInContainer someObj "The room is empty." "Objects in this room:"
     Nothing -> 
       writeLine $ "Unknown room: " <> showRef envRef

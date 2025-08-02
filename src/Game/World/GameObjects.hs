@@ -16,9 +16,10 @@ module Game.World.GameObjects
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (gets)
 import Control.Concurrent.STM (TVar, readTVarIO, atomically, modifyTVar')
+import qualified Control.Monad as M
 import qualified Data.Map.Strict as Map
 
-import Game.Types.Object (getProto, SomeObjectRef(..), SomeObject(..), ObjectRef(..), ObjectData(..), ObjectKind(..), ObjectsMap, objEnv, IsInstantiable, isInstantiable)
+import Game.Types.Object (getProto, SomeObjectRef(..), SomeObject(..), ObjectRef(..), ObjectData(..), ObjectKind(..), ObjectsMap, objEnv, IsInstantiable)
 import Game.Types.GameMonad (GameM)
 import Game.Types.CommandState (CommandState(..))
 import Game.Actions.Inventory (addToInventory, removeFromInventory)
@@ -66,9 +67,9 @@ handleInstantiableObject :: (IsInstantiable k) =>
                            SomeObjectRef -> 
                            ObjectRef 'RoomK -> 
                            GameM Bool
-handleInstantiableObject objRef roomObj updateFn ref envRef = do
+handleInstantiableObject objRefParam roomObj updateFn ref envRef = do
   -- Add/remove the object to/from the room's inventory
-  let updatedRoomObj = updateFn roomObj objRef
+  let updatedRoomObj = updateFn roomObj objRefParam
   
   -- Update the room in the global object map
   objMapTVar <- allObjects
@@ -78,10 +79,10 @@ handleInstantiableObject objRef roomObj updateFn ref envRef = do
   -- For add operations, notify that the object entered the inventory
   -- Use a simple flag to determine if this is an add operation
   let isAddOperation = case objInventory updatedRoomObj of
-        newInv | SomeRef objRef `elem` newInv -> True  -- Object is in inventory after update
+        newInv | SomeRef objRefParam `elem` newInv -> True  -- Object is in inventory after update
         _ -> False
   
-  when isAddOperation $ do
+  M.when isAddOperation $ do
     let proto = getProto envRef
     luaState <- getLuaState proto
     _ <- liftIO $ notifyEnteredInv ref envRef luaState
@@ -107,7 +108,6 @@ addObjectToEnvironment ref = do
       -- Get the object's environment reference
       let envRef = objEnv obj
       let proto = getProto envRef
-      luaState <- getLuaState proto
 
       -- Get the environment object
       maybeEnvObj <- getObject (SomeRef envRef)
@@ -129,15 +129,15 @@ addObjectToEnvironment ref = do
           -- Handle different object types based on their reference
           case ref of
             -- Handle player objects
-            SomeRef objRef@(InstRef "std.player" objId) -> 
+            SomeRef (InstRef "std.player" objId) -> 
               -- Use a type assertion for player objects
               let playerRef = InstRef "std.player" objId :: ObjectRef 'PlayerK
               in handleInstantiableObject playerRef roomObjAsRoom addToInventory ref envRef
                 
             -- Handle item objects
-            SomeRef objRef@(InstRef proto objId) -> 
+            SomeRef (InstRef protoName objId) -> 
               -- Use a type assertion for item objects
-              let itemRef = InstRef proto objId :: ObjectRef 'ItemK
+              let itemRef = InstRef protoName objId :: ObjectRef 'ItemK
               in handleInstantiableObject itemRef roomObjAsRoom addToInventory ref envRef
                 
             _ -> return False -- Not an instantiable object
@@ -174,20 +174,15 @@ removeObjectFromEnvironment ref = do
           -- Handle different object types based on their reference
           case ref of
             -- Handle player objects
-            SomeRef objRef@(InstRef "std.player" objId) -> 
+            SomeRef (InstRef "std.player" objId) -> 
               -- Use a type assertion for player objects
               let playerRef = InstRef "std.player" objId :: ObjectRef 'PlayerK
               in handleInstantiableObject playerRef roomObjAsRoom removeFromInventory ref envRef
                 
             -- Handle item objects
-            SomeRef objRef@(InstRef proto objId) -> 
+            SomeRef (InstRef protoName objId) -> 
               -- Use a type assertion for item objects
-              let itemRef = InstRef proto objId :: ObjectRef 'ItemK
+              let itemRef = InstRef protoName objId :: ObjectRef 'ItemK
               in handleInstantiableObject itemRef roomObjAsRoom removeFromInventory ref envRef
                 
             _ -> return False -- Not an instantiable object
-
--- Helper function for conditional execution
-when :: Monad m => Bool -> m () -> m ()
-when True m = m
-when False _ = return ()

@@ -8,11 +8,9 @@ module Game.Actions.MortalCommands
   ) where
 
 import Game.Actions.Commands (Command(..), CommandHandler, CommandRegistry, handleCommand, createHelpHandler, registerCommand)
-import Game.Monad (GameM, writeLine, getCurrentEnvironment, displayRoomDescription)
-import Game.Types.Object (SomeObjectRef(..), ObjectRef(..))
+import Game.Monad (GameM, getCurrentEnvironment, displayRoomDescription)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
-import Game.Types.Room
 
 
 -- | Registry of all available mortal commands
@@ -30,7 +28,7 @@ handleMortalCommand = handleCommand commandRegistry ""
 
 -- | Examine command handler
 cmdExamine :: CommandHandler
-cmdExamine args = do
+cmdExamine _ = do
   -- Get the current environment reference
   envRef <- getCurrentEnvironment
   

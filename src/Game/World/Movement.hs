@@ -10,7 +10,7 @@ module Game.World.Movement
 import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.STM (atomically, modifyTVar')
 import qualified Data.Map.Strict as Map
-import Game.Monad (GameM, writeLine)
+import Game.Monad (GameM)
 import Game.Types.Object (SomeObjectRef(..), ObjectRef(..), SomeObject(..), ObjectData(..), ObjectKind(..))
 import Game.World.GameObjects (removeObjectFromEnvironment, addObjectToEnvironment, getObject, allObjects)
 
@@ -21,14 +21,14 @@ import Game.World.GameObjects (removeObjectFromEnvironment, addObjectToEnvironme
 -- 3. Adds the object to the new environment
 -- Returns True if both the remove and add operations were successful
 move :: SomeObjectRef -> ObjectRef 'RoomK -> GameM Bool
-move objRef newEnv = do
+move objRefParam newEnv = do
   -- First, get the object to ensure it exists
-  maybeObj <- getObject objRef
+  maybeObj <- getObject objRefParam
   case maybeObj of
     Nothing -> return False
     Just (SomeObject obj) -> do
       -- First remove the object from its current environment
-      removeSuccess <- removeObjectFromEnvironment objRef
+      removeSuccess <- removeObjectFromEnvironment objRefParam
       
       -- If removal was successful, update the object's environment and add it to the new environment
       if removeSuccess
@@ -37,10 +37,10 @@ move objRef newEnv = do
           let updatedObj = obj { objEnv = newEnv }
           objMapTVar <- allObjects
           liftIO $ atomically $ modifyTVar' objMapTVar $ \objMap ->
-            Map.insert objRef (SomeObject updatedObj) objMap
+            Map.insert objRefParam (SomeObject updatedObj) objMap
           
           -- Add the object to the new environment
-          addSuccess <- addObjectToEnvironment objRef
+          addSuccess <- addObjectToEnvironment objRefParam
           
           -- Return True only if both operations were successful
           return addSuccess

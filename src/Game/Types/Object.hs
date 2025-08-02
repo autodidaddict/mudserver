@@ -54,8 +54,7 @@ module Game.Types.Object
   , asInstantiable
   ) where
 
-import Data.Text (Text)
-import qualified Data.Text
+import Data.Text (Text, unpack)
 import Data.Aeson (ToJSON(..), FromJSON(..), (.=), (.:), object, withObject)
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as AT
