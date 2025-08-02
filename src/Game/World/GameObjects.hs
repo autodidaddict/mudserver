@@ -18,7 +18,8 @@ import Control.Concurrent.STM (TVar, readTVarIO, atomically, modifyTVar')
 import qualified Data.Map.Strict as Map
 
 import Game.Types.Object (getProto, SomeObjectRef(..), SomeObject(..), ObjectRef(..), ObjectData(..), ObjectKind(..), ObjectsMap, mkInstancedRef, objEnv, getRef)
-import Game.Monad (GameM, objectsMap, scriptMap)
+import Game.Types.GameMonad (GameM)
+import Game.Types.CommandState (CommandState(..))
 import Game.Actions.Inventory (addToInventory, removeFromInventory)
 import Game.Mudlib.ObjectFuns (notifyEnteredInv)
 import Game.Scripts.Lua (getLuaState)
@@ -26,7 +27,7 @@ import Game.Types.Room (Room(..), mkDefaultRoom)
 
 -- | Get the map of all game objects
 allObjects :: GameM (TVar ObjectsMap)
-allObjects = gets objectsMap
+allObjects = gets (\s -> objectsMap s)
 
 -- | Delete an object from the global object map
 -- If the object's environment (a room) can be located, remove it from the room's inventory

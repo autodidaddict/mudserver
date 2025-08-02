@@ -1,45 +1,46 @@
 -- Monad.hs
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 
 module Game.Monad
-  ( GameM
+  ( -- Re-export GameM and basic functions from Game.Types.GameMonad
+    GameM(..)
   , runGameM
   , rawWrite
   , writeLine
+  -- Additional functions
   , amWizard
   , getCommandState
   , putCommandState
   , CommandState(..)
+  -- Re-export utility functions from Game.World.MonadUtilities
+  , getCurrentPlayer
+  , getCurrentEnvironment
+  , getScriptMapValue
+  , getScriptForPrototype
+  , displayRoomDescription
+  , listObjectsInContainer
+  , handleCommandResult
   ) where
 
-import Control.Monad.State
-import Control.Concurrent.STM (TVar, atomically, readTVar)
-import qualified Network.Socket.ByteString as NSB
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
+import Control.Monad.State (get, put, gets)
+import Control.Monad.IO.Class (liftIO)
+import Control.Concurrent.STM (atomically, readTVar)
 import Game.Types.Player (playerIsWizard)
 import Game.Types.CommandState (CommandState(..))
-
--- | The GameM monad for handling commands with state
-newtype GameM a = GameM { unGameM :: StateT CommandState IO a }
-  deriving (Functor, Applicative, Monad, MonadIO, MonadState CommandState)
-
--- | Run a GameM with the given state
-runGameM :: CommandState -> GameM a -> IO a
-runGameM st action = evalStateT (unGameM action) st
-
--- | Send raw text to the client socket
-rawWrite :: T.Text -> GameM ()
-rawWrite msg = do
-  sock <- gets clientSocket
-  liftIO $ NSB.sendAll sock (TE.encodeUtf8 msg)
-
--- | Send a line of text to the client (with CRLF)
-writeLine :: T.Text -> GameM ()
-writeLine s = rawWrite (s `T.append` "\r\n")
+-- Import GameM type and basic functions
+import Game.Types.GameMonad (GameM(..), runGameM, rawWrite, writeLine)
+-- Re-export utility functions
+import Game.World.MonadUtilities (
+    getCurrentPlayer
+  , getCurrentEnvironment
+  , getScriptMapValue
+  , getScriptForPrototype
+  , displayRoomDescription
+  , listObjectsInContainer
+  , handleCommandResult
+  )
 
 -- | Check if the current player has wizard privileges
 amWizard :: GameM Bool

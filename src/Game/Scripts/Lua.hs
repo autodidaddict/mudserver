@@ -25,11 +25,11 @@ import Game.Scripts.ScriptMap
 import Game.Types.Object (SomeObjectRef(..), ObjectRef(..))
 import Control.Monad (forM_, foldM)
 import Game.Scripts.LuaCtx
-import Game.Monad
 import Control.Monad.State (gets)
 import Control.Concurrent.STM (readTVarIO, atomically, modifyTVar')
 import Game.Driver.DriverFuns (registerGameFunctions)
-import Game.Monad (GameM, getCommandState, scriptMap)
+import Game.Types.GameMonad (GameM, getCommandState, getScriptMap)
+import Game.Types.CommandState (CommandState(..))
 
 -- | A sandbox setup runs inside the Lua monad and can alter the global env.
 type SandboxSetup = LuaM ()
@@ -146,7 +146,7 @@ loadScriptDefault cmdState = loadScript defaultSandbox cmdState
 getLuaState :: T.Text -> GameM Lua.State
 getLuaState prototype = do
   -- Get the script map from the command state
-  scriptMapTVar <- gets scriptMap
+  scriptMapTVar <- getScriptMap
   scriptMapVal <- liftIO $ readTVarIO scriptMapTVar
   
   -- Look up the prototype in the script map

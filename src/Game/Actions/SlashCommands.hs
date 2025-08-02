@@ -9,7 +9,7 @@ module Game.Actions.SlashCommands
   ) where
 
 import Game.Actions.Commands (Command(..), CommandHandler, CommandRegistry, handleCommand, createHelpHandler)
-import Game.Monad (GameM, writeLine, playerList, playerName)
+import Game.Monad (GameM, writeLine, playerList, playerName, handleCommandResult)
 import qualified Data.Map.Strict as Map
 import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.STM (readTVar, atomically)
@@ -51,12 +51,10 @@ cmdWho _ = do
 cmdTell :: CommandHandler
 cmdTell args = do
   case args of
-    [] -> do
-      writeLine "Usage: /tell <player> <message>"
-      return True
-    [_] -> do
-      writeLine "Please include a message to send"
-      return True
+    [] -> 
+      handleCommandResult False "Usage: /tell <player> <message>" ""
+    [_] -> 
+      handleCommandResult False "Please include a message to send" ""
     (targetName:msgWords) -> do
       pl <- gets playerList
       from <- gets playerName
@@ -68,10 +66,9 @@ cmdTell args = do
         Just (sock, _) -> do
           let formattedMsg = unPlayerName from <> " tells you: " <> message <> "\r\n"
           liftIO $ NSB.sendAll sock $ TE.encodeUtf8 formattedMsg
-          writeLine $ "You sent your message to " <> targetName <> "."
+          handleCommandResult True ("You sent your message to " <> targetName <> ".") ""
         Nothing -> 
-          writeLine $ "Player " <> targetName <> " is not online."
-      return True
+          handleCommandResult False ("Player " <> targetName <> " is not online.") ""
 
 -- | Help command handler
 cmdHelpHandler :: CommandHandler

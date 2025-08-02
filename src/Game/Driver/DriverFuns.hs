@@ -16,7 +16,7 @@ import qualified Data.Map.Strict as Map
 import HsLua
 
 import Game.Scripts.LuaCtx (LuaM, liftGameM)
-import Game.Monad (GameM(..))
+import Game.Types.GameMonad (GameM(..))
 import Game.Types.CommandState (CommandState(..))
 import Game.Types.Player (PlayerName(..))
 
