@@ -111,12 +111,12 @@ spec = do
       objPrototype (playerBase player) `shouldBe` "std.player"
       objName (playerBase player) `shouldBe` username
       
-    it "creates rooms with std.room prototype" $ do
+    it "creates rooms with the provided prototype" $ do
       let roomProto = "dungeon" :: Text
           roomName = "Dark Dungeon" :: Text
           room = mkDefaultRoom roomProto roomName
       
-      objPrototype (roomBase room) `shouldBe` "std.room"
+      objPrototype (roomBase room) `shouldBe` roomProto
       objName (roomBase room) `shouldBe` roomName
       
     it "uses std.object as the default prototype" $ do

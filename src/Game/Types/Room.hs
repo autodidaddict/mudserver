@@ -49,7 +49,7 @@ mkDefaultRoom prototype name =
       , objInventory  = []
       , objVisible    = Visibility 10
       , objPersistent = False
-      , objPrototype  = "std.room"  -- Default prototype for rooms
+      , objPrototype  = prototype  -- Use the provided prototype parameter
       }
     }
 

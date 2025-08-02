@@ -20,7 +20,7 @@ import Control.Concurrent.STM (atomically, readTVar, readTVarIO)
 import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
 import Game.Types.Player (Player(..))
-import Game.Types.Object (objEnv, objName, objInventory, objRef, ObjectRef(..), SomeObjectRef(..), SomeObject(..), showRef, ObjectKind(..))
+import Game.Types.Object (objEnv, objName, objInventory, objRef, objPrototype, ObjectRef(..), SomeObjectRef(..), SomeObject(..), showRef, ObjectKind(..))
 import Game.Scripts.ScriptMap (ScriptMap)
 import qualified HsLua as Lua
 import Game.World.GameObjects (getObject)
@@ -64,20 +64,17 @@ displayRoomDescription envRef = do
       let roomName = objName roomObj
       writeLine $ "\n" <> roomName <> " (" <> showRef envRef <> ")"
       
-      -- Get the prototype name from the room reference
-      case objRef roomObj of
-        RoomRef protoName -> do
-          -- Get the script for the prototype
-          maybeScript <- getScriptForPrototype protoName
-          case maybeScript of
-            Just luaState -> do
-              -- Call getShort on the Lua state
-              shortDesc <- liftIO $ getShort luaState
-              writeLine $ "\n" <> T.pack shortDesc <> "\n"
-            Nothing ->
-              writeLine $ "No script found for prototype: " <> protoName
-        _ ->
-          writeLine "Not a room reference (unexpected)"
+      -- Get the prototype name from the room's objPrototype field
+      let protoName = objPrototype roomObj
+      -- Get the script for the prototype
+      maybeScript <- getScriptForPrototype protoName
+      case maybeScript of
+        Just luaState -> do
+          -- Call getShort on the Lua state
+          shortDesc <- liftIO $ getShort luaState
+          writeLine $ "\n" <> T.pack shortDesc <> "\n"
+        Nothing ->
+          writeLine $ "No script found for prototype: " <> protoName
     Nothing ->
       writeLine $ "Unknown room: " <> showRef envRef
 
