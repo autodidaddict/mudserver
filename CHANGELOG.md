@@ -1,4 +1,4 @@
-# Revision history for mudserver
+# Revision history for myrddin
 
 ## 0.1.0.0 -- YYYY-mm-dd
 

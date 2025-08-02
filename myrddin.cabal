@@ -1,5 +1,5 @@
 cabal-version:   3.14
-name:            mudserver
+name:            myrddin
 version:         0.1.0.0
 license:         NONE
 author:          Kevin Hoffman
@@ -58,11 +58,11 @@ library
   default-language:    Haskell2010
   ghc-options:         -Wall
 
-executable mudserver
+executable myrddin
   main-is:             Main.hs
   hs-source-dirs:      app
   build-depends:       base >=4.7 && <5,
-                       mudserver,
+                       myrddin,
                        network,
                        text,
                        stm,
@@ -74,7 +74,7 @@ executable mudserver
   default-language:    Haskell2010
   ghc-options:         -Wall
 
-test-suite mudserver-test
+test-suite myrddin-test
   type:                exitcode-stdio-1.0
   main-is:             Spec.hs
   other-modules:       Game.Types.PlayerSpec,
@@ -88,7 +88,7 @@ test-suite mudserver-test
                        Game.World.MovementSpec
   hs-source-dirs:      test
   build-depends:       base >=4.7 && <5,
-                       mudserver,
+                       myrddin,
                        hspec,
                        containers,
                        text,
@@ -104,4 +104,3 @@ test-suite mudserver-test
   build-tool-depends:  hspec-discover:hspec-discover
   default-language:    Haskell2010
   ghc-options:         -Wall
-

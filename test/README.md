@@ -1,6 +1,6 @@
-# Unit Tests for mudserver
+# Unit Tests for myrddin
 
-This directory contains unit tests for the mudserver project. The tests are written using the [hspec](https://hspec.github.io/) testing framework, which provides a BDD-style syntax for writing tests.
+This directory contains unit tests for the myrddin project. The tests are written using the [hspec](https://hspec.github.io/) testing framework, which provides a BDD-style syntax for writing tests.
 
 ## Test Structure
 
