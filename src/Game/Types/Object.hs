@@ -7,6 +7,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 {-
 Game/
@@ -36,12 +38,6 @@ module Game.Types.Object
   , ObjectsMap
   , showRef
   , Visibility(..)
-  , InstancedRef()
-  , mkInstancedRef
-  , getRef
-  , getProto
-  , IsInstantiable
-  , SomeInstRef(..)
   , SomeObjectRef(..)
   , SomeObject(..)
   , ObjectData(..)
@@ -52,6 +48,10 @@ module Game.Types.Object
   , EquipmentKind(..)
   , HasObject(..)
   , parseInventory
+  , IsInstantiable
+  , getProto
+  , isInstantiable
+  , asInstantiable
   ) where
 
 import Data.Text (Text)
@@ -65,12 +65,32 @@ import Game.Types.Persistable (Persistable(..), defaultSaveObject, defaultLoadOb
 -- Kinds
 data ObjectKind = RoomK | PlayerK | ItemK
 
+-- | Type class for kinds that can be instantiated
+class IsInstantiable (k :: ObjectKind)
+
+-- | Only PlayerK and ItemK can be instantiated
+instance IsInstantiable 'PlayerK
+instance IsInstantiable 'ItemK
+-- Note: No instance for 'RoomK
+
 -- Rooms have no instance, only a prototype
 data ObjectRef (k :: ObjectKind) where
   RoomRef :: Text -> ObjectRef 'RoomK
   InstRef :: Text -> Text -> ObjectRef k
 
 deriving instance Eq (ObjectRef k)
+
+-- | Check if an ObjectRef is instantiable
+isInstantiable :: ObjectRef k -> Bool
+isInstantiable (RoomRef _) = False
+isInstantiable (InstRef _ _) = True
+
+-- | Try to use an ObjectRef as an instantiable reference
+-- Returns Just if it's instantiable, Nothing otherwise
+asInstantiable :: IsInstantiable k => ObjectRef k -> Maybe (ObjectRef k)
+asInstantiable ref@(InstRef _ _) = Just ref
+asInstantiable _ = Nothing
+
 -- | Type alias for the objects map
 -- Maps object references to object instances
 type ObjectsMap = Map SomeObjectRef SomeObject
@@ -98,40 +118,7 @@ instance Show (ObjectRef k) where
 newtype Visibility = Visibility Int
   deriving (Eq, Show)
 
--- Instanced Ref (no RoomRef allowed)
-data InstancedRef (k :: ObjectKind) where
-  IsInst :: ObjectRef k -> InstancedRef k
-
-mkInstancedRef :: ObjectRef k -> Maybe (InstancedRef k)
-mkInstancedRef ref@(InstRef _ _) = Just (IsInst ref)
-mkInstancedRef (RoomRef _)       = Nothing
-
-getRef :: InstancedRef k -> ObjectRef k
-getRef (IsInst r) = r
-
--- | Type class for kinds that can be instantiated
-class IsInstantiable (k :: ObjectKind)
-
--- | Only PlayerK and ItemK can be instantiated
-instance IsInstantiable 'PlayerK
-instance IsInstantiable 'ItemK
--- Note: No instance for 'RoomK
-
--- | SomeInstRef can only contain instantiable kinds
-data SomeInstRef = forall k. IsInstantiable k => SomeInstRef (InstancedRef k)
-
-instance Show SomeInstRef where
-  show (SomeInstRef instRef) = show (getRef instRef)
-  
-instance Eq SomeInstRef where
-  (SomeInstRef a) == (SomeInstRef b) = 
-    case (getRef a, getRef b) of
-      (InstRef proto1 id1, InstRef proto2 id2) -> proto1 == proto2 && id1 == id2
-      -- Note: RoomRef cases should never occur due to IsInstantiable constraint
-      -- but we include them for completeness
-      _ -> False
-
--- A wrapper for heterogeneous inventories
+-- A wrapper for heterogeneous references
 data SomeObjectRef = forall k. SomeRef (ObjectRef k)
 deriving instance Show SomeObjectRef
 
@@ -161,7 +148,7 @@ data ObjectData (k :: ObjectKind) = ObjectData
   { objRef        :: ObjectRef k
   , objName       :: Text
   , objEnv        :: ObjectRef 'RoomK
-  , objInventory  :: [SomeInstRef]
+  , objInventory  :: [SomeObjectRef]  -- Changed from [SomeInstRef] to [SomeObjectRef]
   , objVisible    :: Visibility
   , objPersistent :: Bool
   , objPrototype  :: Text
@@ -174,7 +161,7 @@ defaultPrototype :: Text
 defaultPrototype = "std.object"
 
 -- | Helper function to create an ObjectData with default prototype
-mkObjectData :: ObjectRef k -> Text -> ObjectRef 'RoomK -> [SomeInstRef] -> Visibility -> Bool -> ObjectData k
+mkObjectData :: ObjectRef k -> Text -> ObjectRef 'RoomK -> [SomeObjectRef] -> Visibility -> Bool -> ObjectData k
 mkObjectData ref name env inventory vis persistent = 
   ObjectData ref name env inventory vis persistent defaultPrototype
 
@@ -228,18 +215,18 @@ instance ToJSON Visibility where
 instance FromJSON Visibility where
   parseJSON v = Visibility <$> parseJSON v
 
--- | JSON instances for SomeInstRef
-instance ToJSON SomeInstRef where
-  toJSON (SomeInstRef instRef) = toJSON (getRef instRef)
+-- | JSON instances for SomeObjectRef
+instance ToJSON SomeObjectRef where
+  toJSON (SomeRef ref) = toJSON ref
 
--- | We can't fully deserialize SomeInstRef because we don't know the kind
+-- | We can't fully deserialize SomeObjectRef because we don't know the kind
 -- For simplicity, we'll just create empty inventory lists when deserializing
-instance FromJSON SomeInstRef where
-  parseJSON _ = fail "SomeInstRef deserialization not supported directly"
+instance FromJSON SomeObjectRef where
+  parseJSON _ = fail "SomeObjectRef deserialization not supported directly"
 
--- | Custom parser for lists of SomeInstRef (used for inventory)
+-- | Custom parser for lists of SomeObjectRef (used for inventory)
 -- For simplicity, we'll just return an empty list
-parseInventory :: A.Value -> AT.Parser [SomeInstRef]
+parseInventory :: A.Value -> AT.Parser [SomeObjectRef]
 parseInventory _ = return []
 
 -- | JSON instances for ObjectData
@@ -308,8 +295,6 @@ data EquipmentKind
   | Neither
   deriving Show
 
-
-
 class HasObject a where
   type Kind a :: ObjectKind
 
@@ -322,7 +307,7 @@ class HasObject a where
   getObjectEnv :: a -> ObjectRef 'RoomK
   getObjectEnv = objEnv . getObject
 
-  getObjectInventory :: a -> [SomeInstRef]
+  getObjectInventory :: a -> [SomeObjectRef]
   getObjectInventory = objInventory . getObject
 
   getObjectVisibility :: a -> Visibility
@@ -330,7 +315,6 @@ class HasObject a where
 
   isPersistent :: a -> Bool
   isPersistent = objPersistent . getObject
-
 
 -- | Persistable instance for ObjectData 'PlayerK'
 instance Persistable (ObjectData 'PlayerK) where

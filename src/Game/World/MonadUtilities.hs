@@ -20,7 +20,7 @@ import Control.Concurrent.STM (atomically, readTVar, readTVarIO)
 import qualified Data.Text as T
 import qualified Data.Map.Strict as Map
 import Game.Types.Player (Player(..))
-import Game.Types.Object (objEnv, objName, objInventory, objRef, ObjectRef(..), SomeObjectRef(..), SomeObject(..), SomeInstRef(..), getRef, showRef, ObjectKind(..))
+import Game.Types.Object (objEnv, objName, objInventory, objRef, ObjectRef(..), SomeObjectRef(..), SomeObject(..), showRef, ObjectKind(..))
 import Game.Scripts.ScriptMap (ScriptMap)
 import qualified HsLua as Lua
 import Game.World.GameObjects (getObject)
@@ -90,8 +90,8 @@ listObjectsInContainer (SomeObject objData) emptyMsg listHeaderMsg = do
     else do
       writeLine listHeaderMsg
       -- Format and display each object reference in the inventory
-      mapM_ (\instRef -> case instRef of
-              SomeInstRef ir -> writeLine $ "  " <> showRef (getRef ir)) inventory
+      mapM_ (\ref -> writeLine $ "  " <> case ref of 
+                                           SomeRef r -> showRef r) inventory
 
 -- | Handle command result (standardized way to handle command success/failure)
 handleCommandResult :: Bool -> T.Text -> T.Text -> GameM Bool

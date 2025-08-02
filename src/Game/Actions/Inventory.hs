@@ -12,16 +12,21 @@ module Game.Actions.Inventory
   , getInventoryRefs
   ) where
 
-import Game.Types.Object (ObjectData(..), InstancedRef, SomeInstRef(..), getRef, SomeObjectRef(..), IsInstantiable)
+import Game.Types.Object (ObjectData(..), ObjectRef, SomeObjectRef(..), IsInstantiable)
 
-addToInventory :: IsInstantiable j => ObjectData k -> InstancedRef j -> ObjectData k
-addToInventory obj inst =
-  obj { objInventory = SomeInstRef inst : objInventory obj }
+-- | Add an object to another object's inventory
+-- The object being added must be instantiable (player or item)
+addToInventory :: IsInstantiable j => ObjectData k -> ObjectRef j -> ObjectData k
+addToInventory obj instRef =
+  obj { objInventory = SomeRef instRef : objInventory obj }
 
-removeFromInventory :: IsInstantiable j => ObjectData k -> InstancedRef j -> ObjectData k
-removeFromInventory obj inst =
-  obj { objInventory = filter (/= SomeInstRef inst) (objInventory obj) }
+-- | Remove an object from another object's inventory
+-- The object being removed must be instantiable (player or item)
+removeFromInventory :: IsInstantiable j => ObjectData k -> ObjectRef j -> ObjectData k
+removeFromInventory obj instRef =
+  obj { objInventory = filter (/= SomeRef instRef) (objInventory obj) }
 
-
-getInventoryRefs :: ObjectData k -> [SomeObjectRef]  -- untyped refs
-getInventoryRefs = map (\(SomeInstRef r) -> SomeRef (getRef r)) . objInventory
+-- | Get inventory references as a list of SomeObjectRef
+-- This is now a simple identity function since inventory is already stored as [SomeObjectRef]
+getInventoryRefs :: ObjectData k -> [SomeObjectRef]
+getInventoryRefs = objInventory

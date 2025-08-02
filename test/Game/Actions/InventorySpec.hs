@@ -35,15 +35,13 @@ spec = do
           player = createTestPlayer
           playerObj = playerBase player
           
-      -- Create an instanced reference to the item
-      case mkInstancedRef (objRef item) of
-        Nothing -> expectationFailure "Failed to create instanced reference for item"
-        Just itemRef -> do
-          -- Add the item to the player's inventory
-          let updatedPlayerObj = addToInventory playerObj itemRef
-          
-          -- Verify that the item was added to the inventory
-          length (objInventory updatedPlayerObj) `shouldBe` 1
+      -- Get the item reference directly
+      let itemRef = objRef item
+      -- Add the item to the player's inventory
+      let updatedPlayerObj = addToInventory playerObj itemRef
+      
+      -- Verify that the item was added to the inventory
+      length (objInventory updatedPlayerObj) `shouldBe` 1
     
     it "documents that rooms cannot be added to inventory due to type constraints" $ do
       -- This is a documentation test to explain why rooms cannot be added to inventory
@@ -59,11 +57,11 @@ spec = do
       -- • No instance for (IsInstantiable 'RoomK)
       --   arising from a use of 'addToInventory'
       
-      -- Instead, we verify that mkInstancedRef returns Nothing for room references
+      -- Instead, we verify that isInstantiable returns False for room references
       let roomRef = RoomRef "someRoom"
-      case mkInstancedRef roomRef of
-        Nothing -> return () -- Expected: rooms cannot be instantiated
-        Just _ -> expectationFailure "Room references should not be instantiable"
+      if not (isInstantiable roomRef)
+        then return () -- Expected: rooms cannot be instantiated
+        else expectationFailure "Room references should not be instantiable"
       
       -- This test passes because rooms cannot be instantiated, which is the first
       -- barrier preventing them from being added to inventories. Even if we could
@@ -80,36 +78,32 @@ spec = do
           player = createTestPlayer
           playerObj = playerBase player
           
-      -- Create an instanced reference to the item
-      case mkInstancedRef (objRef item) of
-        Nothing -> expectationFailure "Failed to create instanced reference for item"
-        Just itemRef -> do
-          -- Add the item to the player's inventory
-          let playerWithItem = addToInventory playerObj itemRef
-          
-          -- Verify that the item was added to the inventory
-          length (objInventory playerWithItem) `shouldBe` 1
-          
-          -- Remove the item from the player's inventory
-          let playerWithoutItem = removeFromInventory playerWithItem itemRef
-          
-          -- Verify that the item was removed from the inventory
-          length (objInventory playerWithoutItem) `shouldBe` 0
+      -- Get the item reference directly
+      let itemRef = objRef item
+      -- Add the item to the player's inventory
+      let playerWithItem = addToInventory playerObj itemRef
+      
+      -- Verify that the item was added to the inventory
+      length (objInventory playerWithItem) `shouldBe` 1
+      
+      -- Remove the item from the player's inventory
+      let playerWithoutItem = removeFromInventory playerWithItem itemRef
+      
+      -- Verify that the item was removed from the inventory
+      length (objInventory playerWithoutItem) `shouldBe` 0
     
     it "handles removing objects that aren't in the inventory" $ do
       let item = createTestItem
           player = createTestPlayer
           playerObj = playerBase player
           
-      -- Create an instanced reference to the item
-      case mkInstancedRef (objRef item) of
-        Nothing -> expectationFailure "Failed to create instanced reference for item"
-        Just itemRef -> do
-          -- Remove the item from the player's inventory (even though it's not there)
-          let updatedPlayerObj = removeFromInventory playerObj itemRef
-          
-          -- Verify that the inventory is still empty
-          length (objInventory updatedPlayerObj) `shouldBe` 0
+      -- Get the item reference directly
+      let itemRef = objRef item
+      -- Remove the item from the player's inventory (even though it's not there)
+      let updatedPlayerObj = removeFromInventory playerObj itemRef
+      
+      -- Verify that the inventory is still empty
+      length (objInventory updatedPlayerObj) `shouldBe` 0
     
     it "can remove objects from environment (room)" $ do
       -- Create a test room
@@ -118,18 +112,16 @@ spec = do
           player = createTestPlayer
           playerObj = playerBase player
       
-      -- Create an instanced reference to the player
-      case mkInstancedRef (objRef playerObj) of
-        Nothing -> expectationFailure "Failed to create instanced reference for player"
-        Just playerRef -> do
-          -- Add the player to the room's inventory
-          let roomWithPlayer = addToInventory roomObj playerRef
-          
-          -- Verify that the player was added to the room's inventory
-          length (objInventory roomWithPlayer) `shouldBe` 1
-          
-          -- Remove the player from the room's inventory
-          let roomWithoutPlayer = removeFromInventory roomWithPlayer playerRef
-          
-          -- Verify that the player was removed from the room's inventory
-          length (objInventory roomWithoutPlayer) `shouldBe` 0
+      -- Get the player reference directly
+      let playerRef = objRef playerObj
+      -- Add the player to the room's inventory
+      let roomWithPlayer = addToInventory roomObj playerRef
+      
+      -- Verify that the player was added to the room's inventory
+      length (objInventory roomWithPlayer) `shouldBe` 1
+      
+      -- Remove the player from the room's inventory
+      let roomWithoutPlayer = removeFromInventory roomWithPlayer playerRef
+      
+      -- Verify that the player was removed from the room's inventory
+      length (objInventory roomWithoutPlayer) `shouldBe` 0

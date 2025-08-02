@@ -71,12 +71,10 @@ createMockCommandState socket = do
     Map.insert pName (socket, player) plMap
   
   -- Add item and player to room's inventory
-  case (mkInstancedRef itemRef, mkInstancedRef playerRef) of
-    (Just itemInstRef, Just playerInstRef) -> do
-      let updatedRoomObj = addToInventory (addToInventory roomObj itemInstRef) playerInstRef
-      atomically $ modifyTVar' objectsTVar $ \objMap ->
-        Map.insert (SomeRef roomRef) (SomeObject updatedRoomObj) objMap
-    _ -> error "Failed to create instanced references"
+  -- Use item and player references directly
+  let updatedRoomObj = addToInventory (addToInventory roomObj itemRef) playerRef
+  atomically $ modifyTVar' objectsTVar $ \objMap ->
+    Map.insert (SomeRef roomRef) (SomeObject updatedRoomObj) objMap
   
   -- Create a TVar for the Player object
   playerTVar <- newTVarIO player
@@ -97,11 +95,10 @@ getObjectFromMap :: SomeObjectRef -> ObjectsMap -> Maybe SomeObject
 getObjectFromMap ref objMap = Map.lookup ref objMap
 
 -- | Helper function to check if an object is in a room's inventory
-objectInRoomInventory :: SomeInstRef -> SomeObject -> Bool
+objectInRoomInventory :: SomeObjectRef -> SomeObject -> Bool
 objectInRoomInventory ref (SomeObject obj) = 
   case obj of
-    roomObj@(ObjectData (RoomRef _) _ _ _ _ _ _) -> ref `elem` objInventory roomObj
-    _ -> False  -- Not a room object
+    roomObj -> ref `elem` objInventory roomObj
 
 spec :: Spec
 spec = do
@@ -173,9 +170,6 @@ spec = do
       -- Find the room and item references
       let roomRef = SomeRef (RoomRef "testRoom")
           itemRef = SomeRef (InstRef "item" "123")
-          itemInstRef = case mkInstancedRef (InstRef "item" "123" :: ObjectRef 'ItemK) of
-                          Just ir -> SomeInstRef ir
-                          Nothing -> error "Failed to create instanced reference"
       
       -- Get the room object
       let roomObj = case getObjectFromMap roomRef initialObjMap of
@@ -183,7 +177,7 @@ spec = do
                       Nothing -> error "Room object not found in initial map"
       
       -- Verify the item is in the room's inventory
-      objectInRoomInventory itemInstRef roomObj `shouldBe` True
+      objectInRoomInventory itemRef roomObj `shouldBe` True
       
       -- Run the deleteObject function on the item reference
       _ <- liftIO $ runGameM st $ deleteObject itemRef
@@ -197,7 +191,7 @@ spec = do
                              Nothing -> error "Room object not found in updated map"
       
       -- Verify the item is no longer in the room's inventory
-      objectInRoomInventory itemInstRef updatedRoomObj `shouldBe` False
+      objectInRoomInventory itemRef updatedRoomObj `shouldBe` False
     
     it "removes players from the global object map" $ do
       -- Create a mock socket
@@ -237,9 +231,6 @@ spec = do
       -- Find the room and player references
       let roomRef = SomeRef (RoomRef "testRoom")
           playerRef = SomeRef (InstRef "std.player" "456")
-          playerInstRef = case mkInstancedRef (InstRef "std.player" "456" :: ObjectRef 'PlayerK) of
-                            Just ir -> SomeInstRef ir
-                            Nothing -> error "Failed to create instanced reference"
       
       -- Get the room object
       let roomObj = case getObjectFromMap roomRef initialObjMap of
@@ -247,7 +238,7 @@ spec = do
                       Nothing -> error "Room object not found in initial map"
       
       -- Verify the player is in the room's inventory
-      objectInRoomInventory playerInstRef roomObj `shouldBe` True
+      objectInRoomInventory playerRef roomObj `shouldBe` True
       
       -- Run the deleteObject function on the player reference
       _ <- liftIO $ runGameM st $ deleteObject playerRef
@@ -261,4 +252,4 @@ spec = do
                              Nothing -> error "Room object not found in updated map"
       
       -- Verify the player is no longer in the room's inventory
-      objectInRoomInventory playerInstRef updatedRoomObj `shouldBe` False
+      objectInRoomInventory playerRef updatedRoomObj `shouldBe` False
